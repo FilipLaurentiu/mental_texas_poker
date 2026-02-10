@@ -1,13 +1,20 @@
-use crypto_bigint::{NonZero, U256, Uint};
-use rand::rngs::StdRng;
-use rand::{Rng, RngCore};
-use rand::{SeedableRng, thread_rng};
+use crate::utils::mul_mod_floor;
+use crypto_bigint::{
+    NonZero, U256,
+    rand_core::{OsRng, RngCore},
+};
+use rand::{
+    Rng,
+    SeedableRng
+};
 use starknet::core::crypto::compute_hash_on_elements;
 use starknet_curve::curve_params::EC_ORDER;
-use starknet_types_core::hash::{Pedersen, StarkHash};
-use starknet_types_core::{curve::AffinePoint, felt::Felt, felt::NonZeroFelt};
+use starknet_types_core::{
+    curve::AffinePoint,
+    felt::Felt,
+    hash::{Pedersen, StarkHash},
+};
 use std::ops::{Mul, Neg};
-use crate::utils::mul_mod_floor;
 
 struct SchnorrProof {
     R: AffinePoint,
@@ -17,8 +24,9 @@ struct SchnorrProof {
 
 pub fn get_random_felt() -> Felt {
     let mut buffer = [0u8; 32];
+    let mut rng = OsRng::default();
 
-    thread_rng().fill_bytes(&mut buffer);
+    rng.fill_bytes(&mut buffer);
 
     let res = Felt::from_bytes_be(&buffer);
 
@@ -30,9 +38,9 @@ pub fn get_random_stark_scalar() -> Felt {
     const PRIME: NonZero<U256> = NonZero::<U256>::new_unwrap(U256::from_be_hex(
         "0800000000000010ffffffffffffffffb781126dcae7b2321e66a241adc64d2f",
     ));
-    let mut rng = StdRng::from_os_rng();
+    let mut rng = OsRng::default();
     let mut buffer = [0u8; 32];
-    rng.fill(&mut buffer);
+    rng.fill_bytes(&mut buffer);
     let random_u256 = U256::from_be_slice(&buffer);
     let secret_scalar = random_u256.rem(&PRIME);
 

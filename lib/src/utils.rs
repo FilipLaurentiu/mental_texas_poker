@@ -1,4 +1,3 @@
-use rand::{RngCore, thread_rng};
 use starknet::{
     core::{
         types::{Felt, NonZeroFelt},
@@ -9,8 +8,8 @@ use starknet::{
 use starknet_crypto::{PoseidonHasher, poseidon_hash};
 use starknet_curve::curve_params::{ALPHA, BETA, EC_ORDER};
 use starknet_types_core::curve::AffinePoint;
-use std::collections::HashMap;
 use std::ops::{Mul, Neg};
+use crypto_bigint::rand_core::{OsRng, RngCore};
 use num_bigint::BigInt;
 
 
@@ -66,7 +65,9 @@ pub fn hash_to_stark_curve(value: Felt, network: Option<Felt>) -> AffinePoint {
 pub fn get_random_felt() -> Felt {
     let mut buffer = [0u8; 32];
 
-    thread_rng().fill_bytes(&mut buffer);
+
+    let mut rng = OsRng::default();
+    rng.fill_bytes(&mut buffer);
 
     let res = Felt::from_bytes_be(&buffer);
     println!("Random felt {}", res);
@@ -102,23 +103,4 @@ pub(crate) fn bigint_mul_mod_floor(
     result[(32 - buffer.len())..].copy_from_slice(&buffer[..]);
 
     Felt::from_bytes_be(&result)
-}
-
-#[cfg(test)]
-mod tests {
-    use starknet_curve::curve_params::EC_ORDER;
-    use crate::utils::{get_random_felt};
-
-
-    #[test]
-    fn test_wrap_around() {
-        let mut scalar = get_random_felt();
-
-        while scalar < EC_ORDER {
-            scalar = get_random_felt();
-        }
-        println!("WRAP AROUND THE EC_CURVE_ORDER");
-
-
-    }
 }
