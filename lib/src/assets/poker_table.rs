@@ -1,7 +1,6 @@
 use crate::assets::player::Player;
 use starknet::core::types::U256;
-use starknet_types_core::curve::AffinePoint;
-use starknet_types_core::felt::Felt;
+use starknet_types_core::{curve::AffinePoint, felt::Felt};
 
 enum PokerTableStatus {
     Waiting,
@@ -45,7 +44,7 @@ struct RakeFee {
 
 struct ActivePlayer {
     player: Player,
-    session_key: AffinePoint
+    session_key: AffinePoint,
 }
 
 struct PokerTable {

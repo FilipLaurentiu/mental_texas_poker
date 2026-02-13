@@ -1,7 +1,9 @@
 use crate::utils::get_random_felt;
 use starknet_curve::curve_params::EC_ORDER;
-use starknet_types_core::felt::NonZeroFelt;
-use starknet_types_core::{curve::AffinePoint, felt::Felt};
+use starknet_types_core::{
+    curve::AffinePoint,
+    felt::{Felt, NonZeroFelt},
+};
 use std::ops::{Add, Mul, Neg};
 
 struct ElGamalEncryption {
@@ -16,7 +18,7 @@ impl ElGamalEncryption {
         let M = G.mul(*message);
         let c1 = G.mul(r);
         let c2 = M + pub_key.mul(r);
-        
+
         Self { c1, c2 }
     }
 
@@ -63,8 +65,10 @@ impl ElGamalVecEncryption {
 
 #[cfg(test)]
 mod tests {
-    use crate::crypto::elgamal::ElGamalEncryption;
-    use crate::crypto::schnorr_proof::get_random_stark_scalar;
+    use crate::{
+        crypto::elgamal::ElGamalEncryption,
+        utils::get_random_stark_scalar,
+    };
     use starknet::core::utils::cairo_short_string_to_felt;
     use starknet_types_core::curve::AffinePoint;
     use std::ops::Mul;

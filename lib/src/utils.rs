@@ -1,3 +1,8 @@
+use crate::FE;
+use crypto_bigint::rand_core::{OsRng, RngCore};
+use lambdaworks_math::{traits::ByteConversion, unsigned_integer::element::U256};
+use num_bigint::{BigInt, BigUint};
+use rand::{rngs::ThreadRng, Rng, RngExt};
 use starknet::{
     core::{
         types::{Felt, NonZeroFelt},
@@ -5,14 +10,13 @@ use starknet::{
     },
     macros::felt_dec,
 };
-use starknet_crypto::{PoseidonHasher, poseidon_hash};
-use starknet_curve::curve_params::{ALPHA, BETA, EC_ORDER};
+use starknet_crypto::PoseidonHasher;
+use starknet_curve::curve_params::{ALPHA, BETA};
 use starknet_types_core::curve::AffinePoint;
-use std::ops::{Mul, Neg};
-use crypto_bigint::rand_core::{OsRng, RngCore};
-use num_bigint::BigInt;
-
-
+use std::{
+    ops::{Mul, Neg, Rem},
+    str::FromStr,
+};
 
 /// Hash to curve implementation from https://datatracker.ietf.org/doc/rfc9380/
 /// 6.6.2. Simplified Shallue-van de Woestijne-Ulas Method.
@@ -63,24 +67,85 @@ pub fn hash_to_stark_curve(value: Felt, network: Option<Felt>) -> AffinePoint {
 }
 
 pub fn get_random_felt() -> Felt {
+    const MODULUS: U256 =
+        U256::from_hex_unchecked("800000000000011000000000000000000000000000000000000000000000001");
     let mut buffer = [0u8; 32];
 
+    let mut rng = ThreadRng::default();
+    rng.fill_bytes(&mut buffer);
+
+    let random_u256 = U256::from_bytes_be(&buffer).unwrap();
+    let secret_scalar = random_u256.div_rem(&MODULUS).1;
+
+    Felt::from_bytes_be_slice(&secret_scalar.to_bytes_be())
+}
+
+pub fn get_random_stark_scalar() -> Felt {
+    const STARK_CURVE_MODULUS: U256 =
+        U256::from_hex_unchecked("800000000000010ffffffffffffffffb781126dcae7b2321e66a241adc64d2f");
+    let mut buffer = [0u8; 32];
+
+    let mut rng = ThreadRng::default();
+    rng.fill_bytes(&mut buffer);
+
+    let random_u256 = U256::from_bytes_be(&buffer).unwrap();
+    let secret_scalar = random_u256.div_rem(&STARK_CURVE_MODULUS).1;
+
+    Felt::from_bytes_be_slice(&secret_scalar.to_bytes_be())
+}
+
+pub fn get_random_fe() -> FE {
+    const MODULUS: U256 =
+        U256::from_hex_unchecked("800000000000011000000000000000000000000000000000000000000000001");
+    let mut buffer = [0u8; 32];
 
     let mut rng = OsRng::default();
     rng.fill_bytes(&mut buffer);
 
-    let res = Felt::from_bytes_be(&buffer);
-    println!("Random felt {}", res);
-    res
+    let random_u256 = U256::from_bytes_be(&buffer).unwrap();
+    let secret_scalar = random_u256.div_rem(&MODULUS).1;
+
+    FE::from_bytes_be(&secret_scalar.to_bytes_be()).unwrap()
 }
 
-pub fn get_random_stark_scalar() -> Felt {
-    let scalar = get_random_felt()
-        .div_rem(&NonZeroFelt::from_felt_unchecked(EC_ORDER))
-        .1;
+pub fn sample_field_elem() -> FE {
+    let mut rng = ThreadRng::default();
+    FE::new(U256 {
+        limbs: [
+            rng.next_u64(),
+            rng.next_u64(),
+            rng.next_u64(),
+            rng.next_u64(),
+        ],
+    })
+}
 
-    println!("Random scalar {}", scalar);
-    scalar
+pub fn get_random_fe_scalar() -> FE {
+    const CURVE_ORDER: U256 =
+        U256::from_hex_unchecked("800000000000010ffffffffffffffffb781126dcae7b2321e66a241adc64d2f");
+    let mut buffer = [0u8; 32];
+
+    let mut rng = ThreadRng::default();
+    rng.fill_bytes(&mut buffer);
+
+    let random_u256 = U256::from_bytes_be(buffer.as_slice()).unwrap();
+    let secret_scalar = random_u256.div_rem(&CURVE_ORDER).1;
+
+    FE::from_bytes_be(&secret_scalar.to_bytes_be()).unwrap()
+}
+
+pub fn modulo(element: &FE, modulo: &FE) -> FE {
+    let (_, r) = element.representative().div_rem(&modulo.representative());
+    FE::from(&r)
+}
+
+pub fn mul_mod(lhs: &FE, rhs: &FE, modulus: &FE) -> FE {
+    let lhs_bigint = BigUint::from_bytes_be(&lhs.representative().to_bytes_be());
+    let rhs_bigint = BigUint::from_bytes_be(&rhs.representative().to_bytes_be());
+    let modulus_bigint = BigUint::from_bytes_be(&modulus.representative().to_bytes_be());
+
+    let res = (lhs_bigint * rhs_bigint) % modulus_bigint;
+    FE::from_bytes_be(&res.to_bytes_be()).unwrap()
 }
 
 pub(crate) fn mul_mod_floor(multiplicand: &Felt, multiplier: &Felt, modulus: &Felt) -> Felt {
@@ -103,4 +168,15 @@ pub(crate) fn bigint_mul_mod_floor(
     result[(32 - buffer.len())..].copy_from_slice(&buffer[..]);
 
     Felt::from_bytes_be(&result)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::utils::get_random_fe;
+
+    #[test]
+    fn test_random_field_element() {
+        let random_field_element = get_random_fe();
+        println!("element {}", random_field_element);
+    }
 }
