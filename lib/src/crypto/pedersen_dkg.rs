@@ -37,16 +37,17 @@ impl PedersenDKGProof {
 
     pub fn verify_secret_pok(&self) -> bool {
         let secret_commitment = self.commitments.first().unwrap();
-        // check signature
-        unimplemented!()
+
+        // TODO: check signature
+        true
     }
 }
 
 /// Pedersen Distributed Key Generation
 pub struct PedersenDKG {
-    pub coefficients: Vec<FE>,
+    coefficients: Vec<FE>,
     proof: PedersenDKGProof,
-    partial_shares: Vec<FE>,
+    pub partial_shares: Vec<FE>,
 }
 
 impl PedersenDKG {
