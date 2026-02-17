@@ -31,15 +31,23 @@ impl PedersenDKGProof {
         self.commitments.len() - 1
     }
 
-    pub fn verify(&self) {
-        unimplemented!()
-    }
+    /// Verify Pedersen DKG commitment.
+    pub fn verify(&self, dkg_share: FE) -> bool {
+        let dkg_polynomial_degree = self.size();
 
-    pub fn verify_secret_pok(&self) -> bool {
-        let secret_commitment = self.commitments.first().unwrap();
+        let mut x = dkg_share.clone();
+        let acc = StarkCurve::generator();
+        for i in 1..dkg_polynomial_degree {
+            let coefficient_commitment = self.commitments.get(i).unwrap();
+            acc.operate_with(&coefficient_commitment.operate_with_self(x.representative()));
+            x = x.double();
+        }
+        let dkg_share_point = StarkCurve::generator().operate_with_self(dkg_share.representative());
 
-        // TODO: check signature
-        true
+
+        // TODO: Verify signature for the secret.
+
+        acc == dkg_share_point
     }
 }
 

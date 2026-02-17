@@ -1076,6 +1076,8 @@ dependencies = [
  "lambdaworks-crypto",
  "lambdaworks-math",
  "num-bigint",
+ "num-integer",
+ "num-traits",
  "rand 0.10.0",
  "starknet",
  "starknet-crypto",

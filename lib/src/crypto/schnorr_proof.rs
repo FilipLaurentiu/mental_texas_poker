@@ -1,5 +1,5 @@
 use crate::{
-    constants::CURVE_ORDER_FE, utils::{get_random_fe_scalar, mul_mod},
+    constants::CURVE_ORDER_FE, utils::{add_mod, get_random_fe_scalar, mul_mod},
     CurvePoint,
     FE,
 };
@@ -41,7 +41,11 @@ impl SchnorrProof {
 
         println!("ep  {:?}", e_p);
         // s = k + private_key * e
-        let s = k + mul_mod(private_key, &e, &CURVE_ORDER_FE);
+        let s = add_mod(
+            &k,
+            &mul_mod(private_key, &e, &CURVE_ORDER_FE),
+            &CURVE_ORDER_FE,
+        );
 
         Self {
             message: message.clone(),

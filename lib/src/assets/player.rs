@@ -16,6 +16,7 @@ use lambdaworks_math::{
 /// - `secret_key_share` - share of the distributed key
 /// - `encrypted_cards` - encrypted cards that player owns
 pub struct Player {
+    table_id: FE,
     table_seat: usize,
     wallet_address: FE,
     secret_key_share: FE,
@@ -23,8 +24,9 @@ pub struct Player {
 }
 
 impl Player {
-    fn new(table_seat: usize, wallet_address: FE, secret_key_share: FE) -> Self {
+    fn new(table_id: FE, table_seat: usize, wallet_address: FE, secret_key_share: FE) -> Self {
         Self {
+            table_id,
             table_seat,
             wallet_address,
             secret_key_share,
@@ -64,28 +66,21 @@ impl Player {
         encrypted_coeffs
     }
 
-    /// Decrypt and verify Pedersen DKG commitment.
-    fn verify_dkg(
-        &self,
-        pub_key: &CurvePoint,
-        encrypted_dkg_share: EncryptedDKGShare,
+    /// Receive DKG share from player.
+    /// - `pedersen_dkg_proof` - Pedersen DKG proof
+    /// - `encrypted_dkg_share` - Encrypted DKG share
+    /// - `pub_key` - Sender public key
+    pub fn receive_dkg_share(
+        self,
         pedersen_dkg_proof: &PedersenDKGProof,
-    ) -> bool {
+        encrypted_dkg_share: EncryptedDKGShare,
+        pub_key: &CurvePoint,
+    ) {
         let ecdh_secret = self.ecdh_secret(pub_key).to_bytes_be();
-
         let dkg_share = encrypted_dkg_share.decrypt_dkg_share(ecdh_secret).unwrap();
-        let dkg_polynomial_degree = pedersen_dkg_proof.size();
-
-        let mut x = dkg_share.clone();
-        let acc = StarkCurve::generator();
-        for i in 1..dkg_polynomial_degree {
-            let coefficient_commitment = pedersen_dkg_proof.commitments.get(i).unwrap();
-            acc.operate_with(&coefficient_commitment.operate_with_self(x.representative()));
-            x = x.double();
-        }
-        let dkg_share_point = StarkCurve::generator().operate_with_self(dkg_share.representative());
-
-        acc == dkg_share_point
+        pedersen_dkg_proof.verify(dkg_share);
+        
+        
     }
 }
 
@@ -126,13 +121,15 @@ impl EncryptedDKGShare {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::get_random_fe;
     use crate::{assets::player::Player, FE};
 
     #[test]
     fn test_dkg() {
-        let player1 = Player::new(1, FE::from(1), FE::from(11));
-        let player2 = Player::new(2, FE::from(2), FE::from(22));
-        let player3 = Player::new(3, FE::from(3), FE::from(33));
+        let table_id = get_random_fe();
+        let player1 = Player::new(table_id, 1, FE::from(1), FE::from(11));
+        let player2 = Player::new(table_id, 2, FE::from(2), FE::from(22));
+        let player3 = Player::new(table_id, 3, FE::from(3), FE::from(33));
 
         let players_pub = vec![player1.pub_key(), player2.pub_key(), player3.pub_key()];
         let pedersen_dkg_player1 = player1.run_pedersen_dkg(&players_pub);

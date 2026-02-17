@@ -2,7 +2,9 @@ use crate::FE;
 use crypto_bigint::rand_core::{OsRng, RngCore};
 use lambdaworks_math::{traits::ByteConversion, unsigned_integer::element::U256};
 use num_bigint::{BigInt, BigUint};
-use rand::{rngs::ThreadRng, Rng, RngExt};
+use num_integer::Integer;
+use num_traits::{identities::One, Zero};
+use rand::{rngs::ThreadRng, Rng};
 use starknet::{
     core::{
         types::{Felt, NonZeroFelt},
@@ -13,10 +15,7 @@ use starknet::{
 use starknet_crypto::PoseidonHasher;
 use starknet_curve::curve_params::{ALPHA, BETA};
 use starknet_types_core::curve::AffinePoint;
-use std::{
-    ops::{Mul, Neg, Rem},
-    str::FromStr,
-};
+use std::ops::{Add, Neg};
 
 /// Hash to curve implementation from https://datatracker.ietf.org/doc/rfc9380/
 /// 6.6.2. Simplified Shallue-van de Woestijne-Ulas Method.
@@ -139,44 +138,48 @@ pub fn modulo(element: &FE, modulo: &FE) -> FE {
     FE::from(&r)
 }
 
+pub fn add_mod(augend: &FE, addend: &FE, modulus: &FE) -> FE {
+    let augend = augend.to_big_uint();
+    let addend = addend.to_big_uint();
+    let modulus_bigint = modulus.to_big_uint();
+
+    let res = augend.add(addend) % modulus_bigint;
+
+    FE::from_bytes_be(&big_uint_to_32_bytes(&res)).unwrap()
+}
+
 pub fn mul_mod(lhs: &FE, rhs: &FE, modulus: &FE) -> FE {
-    let lhs_bigint = BigUint::from_bytes_be(&lhs.representative().to_bytes_be());
-    let rhs_bigint = BigUint::from_bytes_be(&rhs.representative().to_bytes_be());
-    let modulus_bigint = BigUint::from_bytes_be(&modulus.representative().to_bytes_be());
-
-    let res = (lhs_bigint * rhs_bigint) % modulus_bigint;
-    FE::from_bytes_be(&res.to_bytes_be()).unwrap()
+    let res = (lhs.to_big_uint() * rhs.to_big_uint()) % modulus.to_big_uint();
+    FE::from_bytes_be(&big_uint_to_32_bytes(&res)).unwrap()
 }
 
-pub(crate) fn mul_mod_floor(multiplicand: &Felt, multiplier: &Felt, modulus: &Felt) -> Felt {
-    let multiplicand = BigInt::from_bytes_be(num_bigint::Sign::Plus, &multiplicand.to_bytes_be());
-    bigint_mul_mod_floor(multiplicand, multiplier, modulus)
+fn big_uint_to_32_bytes(n: &BigUint) -> [u8; 32] {
+    let bytes = n.to_bytes_be();
+
+    assert!(bytes.len() <= 32, "Number does not fit in 32 bytes");
+
+    let mut padded = [0u8; 32];
+    padded[32 - bytes.len()..].copy_from_slice(&bytes);
+    padded
 }
 
-pub(crate) fn bigint_mul_mod_floor(
-    multiplicand: BigInt,
-    multiplier: &Felt,
-    modulus: &Felt,
-) -> Felt {
-    let multiplier = BigInt::from_bytes_be(num_bigint::Sign::Plus, &multiplier.to_bytes_be());
+pub(crate) fn inv_mod(operand: &FE, modulus: &FE) -> Option<FE> {
+    let operand = BigInt::from_bytes_be(num_bigint::Sign::Plus, &operand.to_bytes_be());
     let modulus = BigInt::from_bytes_be(num_bigint::Sign::Plus, &modulus.to_bytes_be());
 
-    let result = multiplicand.mul(multiplier) % modulus;
+    let extended_gcd = operand.extended_gcd(&modulus);
+    if extended_gcd.gcd != BigInt::one() {
+        return None;
+    }
+    let result = if extended_gcd.x < BigInt::zero() {
+        extended_gcd.x + modulus
+    } else {
+        extended_gcd.x
+    };
 
     let (_, buffer) = result.to_bytes_be();
     let mut result = [0u8; 32];
     result[(32 - buffer.len())..].copy_from_slice(&buffer[..]);
 
-    Felt::from_bytes_be(&result)
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::utils::get_random_fe;
-
-    #[test]
-    fn test_random_field_element() {
-        let random_field_element = get_random_fe();
-        println!("element {}", random_field_element);
-    }
+    Some(FE::from_bytes_be(&result).unwrap())
 }
