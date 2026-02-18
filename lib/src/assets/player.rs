@@ -48,7 +48,7 @@ impl Player {
     /// Run Pedersen DKG.
     /// Returns encrypted coefficients for each player.
     pub fn run_pedersen_dkg(&self, players_pub_keys: &[CurvePoint]) -> Vec<EncryptedDKGShare> {
-        let pedersen_dkg = PedersenDKG::new(players_pub_keys.len());
+        let pedersen_dkg = PedersenDKG::new(players_pub_keys.len(), &self.secret_key_share);
 
         let mut encrypted_coeffs = vec![];
         for (i, player_pub_key) in players_pub_keys.iter().enumerate() {
@@ -78,9 +78,7 @@ impl Player {
     ) {
         let ecdh_secret = self.ecdh_secret(pub_key).to_bytes_be();
         let dkg_share = encrypted_dkg_share.decrypt_dkg_share(ecdh_secret).unwrap();
-        pedersen_dkg_proof.verify(dkg_share);
-        
-        
+        pedersen_dkg_proof.verify(dkg_share, pub_key);
     }
 }
 

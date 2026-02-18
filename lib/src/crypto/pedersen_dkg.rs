@@ -1,3 +1,4 @@
+use crate::crypto::schnorr_proof::SchnorrProof;
 use crate::{utils::get_random_fe_scalar, CurvePoint, FE};
 use lambdaworks_math::{
     cyclic_group::IsGroup,
@@ -8,19 +9,18 @@ use lambdaworks_math::{
     polynomial::Polynomial,
     traits::ByteConversion,
 };
-use starknet_types_core::felt::Felt;
 
 /// Pedersen DKG Proof
 ///
 /// - `secret_pok` - Proof of knowledge of the shared secret.
 /// - `commitment` - Commitment of the coefficients. The first entry is the commitment of the secret value.
 pub struct PedersenDKGProof {
-    secret_pok: Felt,
+    secret_pok: SchnorrProof,
     pub commitments: Vec<CurvePoint>,
 }
 
 impl PedersenDKGProof {
-    fn new(commitments: Vec<CurvePoint>, secret_pok: Felt) -> Self {
+    fn new(commitments: Vec<CurvePoint>, secret_pok: SchnorrProof) -> Self {
         Self {
             secret_pok,
             commitments,
@@ -32,7 +32,10 @@ impl PedersenDKGProof {
     }
 
     /// Verify Pedersen DKG commitment.
-    pub fn verify(&self, dkg_share: FE) -> bool {
+    ///
+    /// - `dkg_share` - Received dkg share
+    /// - `pub_key` - Sender public key
+    pub fn verify(&self, dkg_share: FE, pub_key: &CurvePoint) -> bool {
         let dkg_polynomial_degree = self.size();
 
         let mut x = dkg_share.clone();
@@ -44,23 +47,20 @@ impl PedersenDKGProof {
         }
         let dkg_share_point = StarkCurve::generator().operate_with_self(dkg_share.representative());
 
-
-        // TODO: Verify signature for the secret.
-
-        acc == dkg_share_point
+        self.secret_pok.verify_signature(pub_key) && acc == dkg_share_point
     }
 }
 
 /// Pedersen Distributed Key Generation
 pub struct PedersenDKG {
     coefficients: Vec<FE>,
-    proof: PedersenDKGProof,
+    pub proof: PedersenDKGProof,
     pub partial_shares: Vec<FE>,
 }
 
 impl PedersenDKG {
     /// - `n` - polynomial degree
-    pub fn new(n: usize) -> Self {
+    pub fn new(n: usize, private_key: &FE) -> Self {
         let mut random_coefficients: Vec<FE> = Vec::with_capacity(n);
         random_coefficients.fill_with(get_random_fe_scalar);
 
@@ -85,17 +85,15 @@ impl PedersenDKG {
             commitments.push(commitment);
         }
 
+        let secret_pok = SchnorrProof::sign_message(private_key, secret);
+
         Self {
             coefficients: random_coefficients,
             proof: PedersenDKGProof {
-                secret_pok: Felt::ZERO,
+                secret_pok,
                 commitments,
             },
             partial_shares,
         }
-    }
-
-    pub fn proof(self) -> PedersenDKGProof {
-        self.proof
     }
 }

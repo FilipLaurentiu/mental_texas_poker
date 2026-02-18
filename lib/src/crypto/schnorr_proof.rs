@@ -3,9 +3,7 @@ use crate::{
     CurvePoint,
     FE,
 };
-
 use crypto_bigint::rand_core::RngCore;
-
 use lambdaworks_crypto::hash::pedersen::{Pedersen, PedersenStarkCurve};
 use lambdaworks_math::{
     cyclic_group::IsGroup,
@@ -19,7 +17,7 @@ use std::{
     ops::{Div, Mul, Neg},
 };
 
-struct SchnorrProof {
+pub struct SchnorrProof {
     message: FE,
     signature: (CurvePoint, FE),
 }
@@ -94,6 +92,6 @@ mod tests {
 
         let is_valid = proof.verify_signature(&pub_key);
         println!("Valid proof: {}", is_valid);
-        assert!(is_valid == true);
+        assert_eq!(is_valid, true);
     }
 }
