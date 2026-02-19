@@ -1,16 +1,17 @@
 use crate::{
-    crypto::pedersen_dkg::{PedersenDKG, PedersenDKGProof}, CurvePoint,
+    assets::card::Card, crypto::{
+        ecdh::ecdh_secret,
+        pedersen_dkg::{EncryptedDKGShare, PedersenDKG, PedersenDKGProof},
+    },
+    CurvePoint,
     FE,
-};
-use chacha20poly1305::{
-    aead::{rand_core::RngCore, Aead, Key, KeyInit, OsRng}, Error, XChaCha20Poly1305,
-    XNonce,
 };
 use lambdaworks_math::{
     cyclic_group::IsGroup,
     elliptic_curve::{short_weierstrass::curves::stark_curve::StarkCurve, traits::IsEllipticCurve},
     traits::ByteConversion,
 };
+use std::collections::HashMap;
 
 /// - `wallet` - on-chain wallet address
 /// - `secret_key_share` - share of the distributed key
@@ -21,6 +22,24 @@ pub struct Player {
     wallet_address: FE,
     secret_key_share: FE,
     encrypted_cards: Option<[CurvePoint; 2]>,
+    decrypted_cards: Option<[Card; 2]>,
+    pedersen_dkg: Option<PedersenDKG>,
+    dkg_shares: Vec<FE>,
+    received_dkg_shares: HashMap<(FE, FE), bool>,
+}
+
+#[derive(Debug)]
+enum ReceiveDKGShareError {
+    AlreadyReceived,
+    DKGDecryptionFail,
+    InvalidDKGProof,
+    InvalidShareElement,
+}
+
+#[derive(Debug)]
+enum GetPlayerDKGShareError {
+    InvalidPedersenDKG,
+    InvalidTableSeat,
 }
 
 impl Player {
@@ -31,6 +50,10 @@ impl Player {
             wallet_address,
             secret_key_share,
             encrypted_cards: None,
+            decrypted_cards: None,
+            pedersen_dkg: None,
+            dkg_shares: vec![],
+            received_dkg_shares: HashMap::new(),
         }
     }
 
@@ -39,31 +62,36 @@ impl Player {
         StarkCurve::generator().operate_with_self(self.secret_key_share.representative())
     }
 
-    /// Compute Diffie-Hellman secret key from the secret key and the other player public key.
-    pub fn ecdh_secret(&self, player_pub_key: &CurvePoint) -> FE {
-        let secret = player_pub_key.operate_with_self(self.secret_key_share.representative());
-        *secret.to_affine().x()
+    /// Run Pedersen DKG.
+    pub fn run_pedersen_dkg(&mut self, players_pub_keys: &[CurvePoint]) {
+        let pedersen_dkg = PedersenDKG::new(
+            players_pub_keys.len(),
+            &self.secret_key_share,
+            players_pub_keys,
+        );
+
+        self.pedersen_dkg = Some(pedersen_dkg);
     }
 
-    /// Run Pedersen DKG.
-    /// Returns encrypted coefficients for each player.
-    pub fn run_pedersen_dkg(&self, players_pub_keys: &[CurvePoint]) -> Vec<EncryptedDKGShare> {
-        let pedersen_dkg = PedersenDKG::new(players_pub_keys.len(), &self.secret_key_share);
-
-        let mut encrypted_coeffs = vec![];
-        for (i, player_pub_key) in players_pub_keys.iter().enumerate() {
-            let evaluations = pedersen_dkg
-                .partial_shares
-                .get(i + 1)
-                .unwrap()
-                .to_bytes_be();
-
-            let ecdh_secret = self.ecdh_secret(player_pub_key).to_bytes_be();
-            let ciphertext =
-                EncryptedDKGShare::encrypt_dkg_share(&ecdh_secret, evaluations.as_ref());
-            encrypted_coeffs.push(ciphertext);
+    pub fn get_player_dkg_share(
+        &self,
+        table_seat: usize,
+    ) -> Result<&EncryptedDKGShare, GetPlayerDKGShareError> {
+        if table_seat == self.table_seat {
+            Err(GetPlayerDKGShareError::InvalidTableSeat)
+        } else {
+            Ok(self
+                .pedersen_dkg
+                .as_ref()
+                .ok_or_else(|| GetPlayerDKGShareError::InvalidPedersenDKG)?
+                .encrypted_dkg_shares
+                .get(table_seat)
+                .ok_or_else(|| GetPlayerDKGShareError::InvalidTableSeat)?)
         }
-        encrypted_coeffs
+    }
+
+    pub fn get_pedersen_dkg_proof(&self) -> Option<&PedersenDKGProof> {
+        self.pedersen_dkg.as_ref().map(|ped_dkg| &ped_dkg.proof)
     }
 
     /// Receive DKG share from player.
@@ -71,67 +99,109 @@ impl Player {
     /// - `encrypted_dkg_share` - Encrypted DKG share
     /// - `pub_key` - Sender public key
     pub fn receive_dkg_share(
-        self,
+        &mut self,
         pedersen_dkg_proof: &PedersenDKGProof,
-        encrypted_dkg_share: EncryptedDKGShare,
+        encrypted_dkg_share: &EncryptedDKGShare,
         pub_key: &CurvePoint,
-    ) {
-        let ecdh_secret = self.ecdh_secret(pub_key).to_bytes_be();
-        let dkg_share = encrypted_dkg_share.decrypt_dkg_share(ecdh_secret).unwrap();
-        pedersen_dkg_proof.verify(dkg_share, pub_key);
-    }
-}
+    ) -> Result<(), ReceiveDKGShareError> {
+        if let Some(received) = self.received_dkg_shares.get(&(*pub_key.x(), *pub_key.y())) {
+            if *received {
+                return Err(ReceiveDKGShareError::AlreadyReceived);
+            }
+        }
 
-struct EncryptedDKGShare {
-    ciphertext: Vec<u8>,
-    nonce: Vec<u8>,
-}
+        let ecdh_secret = ecdh_secret(&self.secret_key_share, pub_key).to_bytes_be();
+        let dkg_share = encrypted_dkg_share
+            .decrypt_dkg_share(&ecdh_secret)
+            .map_err(|_| ReceiveDKGShareError::DKGDecryptionFail)?;
 
-impl EncryptedDKGShare {
-    fn new(ciphertext: Vec<u8>, nonce: Vec<u8>) -> Self {
-        Self { ciphertext, nonce }
-    }
+        let share_fe =
+            FE::from_bytes_be(&dkg_share).map_err(|_| ReceiveDKGShareError::InvalidShareElement)?;
 
-    /// Encrypt polynomial coefficient with the player public key.
-    /// Returns (ciphertext, nonce)
-    fn encrypt_dkg_share(ecdh_secret: &[u8; 32], coefficient: &[u8]) -> EncryptedDKGShare {
-        let cipher = XChaCha20Poly1305::new(<&Key<XChaCha20Poly1305>>::from(ecdh_secret));
-        let mut nonce_bytes = [0u8; 24];
-        OsRng.fill_bytes(&mut nonce_bytes);
-
-        let nonce = XNonce::from_slice(&nonce_bytes);
-        let ciphertext = cipher.encrypt(&nonce, coefficient.as_ref()).unwrap();
-
-        EncryptedDKGShare::new(ciphertext, nonce.to_vec())
+        if pedersen_dkg_proof.verify(share_fe, pub_key) {
+            self.dkg_shares.push(share_fe);
+            self.received_dkg_shares
+                .insert((*pub_key.x(), *pub_key.y()), true);
+            Ok(())
+        } else {
+            Err(ReceiveDKGShareError::InvalidDKGProof)
+        }
     }
 
-    /// Decrypt DKG share from player
-    fn decrypt_dkg_share(&self, secret_key: [u8; 32]) -> Result<FE, Error> {
-        let cipher = XChaCha20Poly1305::new(<&Key<XChaCha20Poly1305>>::from(&secret_key));
-        let plaintext_bytes = cipher.decrypt(
-            XNonce::from_slice(self.nonce.as_ref()),
-            self.ciphertext.as_ref(),
-        )?;
+    pub fn dkg_share(&self) -> FE {
+        // sum of dkg shares from other players
+        let dkg_shares_sum: FE = self.dkg_shares.iter().fold(FE::zero(), |a, b| a + b);
 
-        Ok(FE::from_bytes_be(&plaintext_bytes).unwrap())
+        dkg_shares_sum + self.secret_key_share
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::get_random_fe;
-    use crate::{assets::player::Player, FE};
+    use crate::{
+        assets::{
+            player::Player,
+            poker_table::{BuyInPokerTableType, PokerTable, PokerTableType, Rake},
+        },
+        FE,
+    };
+    use crypto_bigint::U256;
 
     #[test]
     fn test_dkg() {
-        let table_id = get_random_fe();
-        let player1 = Player::new(table_id, 1, FE::from(1), FE::from(11));
-        let player2 = Player::new(table_id, 2, FE::from(2), FE::from(22));
-        let player3 = Player::new(table_id, 3, FE::from(3), FE::from(33));
+        let mut poker_table = PokerTable::new(
+            PokerTableType::BuyIn(BuyInPokerTableType {
+                buy_in: U256::from_u8(10),
+            }),
+            6,
+            2,
+            Rake::default(),
+        );
+        let mut player1 = Player::new(poker_table.table_id, 1, FE::from(1), FE::from(11));
+        let mut player2 = Player::new(poker_table.table_id, 2, FE::from(2), FE::from(22));
+        let mut player3 = Player::new(poker_table.table_id, 3, FE::from(3), FE::from(33));
+
+        poker_table
+            .add_player(
+                &player1.wallet_address,
+                &player1.pub_key(),
+                U256::from_u128(250),
+            )
+            .unwrap();
+        poker_table
+            .add_player(
+                &player2.wallet_address,
+                &player2.pub_key(),
+                U256::from_u128(400),
+            )
+            .unwrap();
+        poker_table
+            .add_player(
+                &player3.wallet_address,
+                &player3.pub_key(),
+                U256::from_u128(300),
+            )
+            .unwrap();
 
         let players_pub = vec![player1.pub_key(), player2.pub_key(), player3.pub_key()];
-        let pedersen_dkg_player1 = player1.run_pedersen_dkg(&players_pub);
-        let pedersen_dkg_player2 = player1.run_pedersen_dkg(&players_pub);
-        let pedersen_dkg_player3 = player1.run_pedersen_dkg(&players_pub);
+        player1.run_pedersen_dkg(&players_pub);
+        player2.run_pedersen_dkg(&players_pub);
+        player3.run_pedersen_dkg(&players_pub);
+
+        player1
+            .receive_dkg_share(
+                &player2.get_pedersen_dkg_proof().unwrap(),
+                player2.get_player_dkg_share(0).unwrap(),
+                &player2.pub_key(),
+            )
+            .unwrap();
+
+        player1
+            .receive_dkg_share(
+                &player3.get_pedersen_dkg_proof().unwrap(),
+                player3.get_player_dkg_share(0).unwrap(),
+                &player3.pub_key(),
+            )
+            .unwrap();
     }
 }

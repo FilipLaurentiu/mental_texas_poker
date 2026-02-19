@@ -33,11 +33,6 @@ impl SchnorrProof {
         // compute e = H(R, H(message))
         let e = PedersenStarkCurve::hash(&PedersenStarkCurve::hash(R.x(), R.y()), message);
 
-        let e_p = g
-            .operate_with_self(mul_mod(private_key, &e, &CURVE_ORDER_FE).representative())
-            .to_affine();
-
-        println!("ep  {:?}", e_p);
         // s = k + private_key * e
         let s = add_mod(
             &k,
@@ -56,9 +51,6 @@ impl SchnorrProof {
         let (R, s) = &self.signature;
 
         let e = PedersenStarkCurve::hash(&PedersenStarkCurve::hash(R.x(), R.y()), &self.message);
-
-        let e_p = public_key.operate_with_self(e.representative()).to_affine();
-        println!("ep  {:?}", e_p);
 
         let R_v = g
             .operate_with_self(s.representative())

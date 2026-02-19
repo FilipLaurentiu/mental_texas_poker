@@ -24,7 +24,7 @@ enum Rank {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Card {
+pub struct Card {
     rank: Rank,
     suit: Suit,
 }

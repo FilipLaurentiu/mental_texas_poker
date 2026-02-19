@@ -1,11 +1,15 @@
-use crate::crypto::schnorr_proof::SchnorrProof;
-use crate::{utils::get_random_fe_scalar, CurvePoint, FE};
+use crate::{
+    crypto::{ecdh::ecdh_secret, schnorr_proof::SchnorrProof}, utils::get_random_fe_scalar,
+    CurvePoint,
+    FE,
+};
+use chacha20poly1305::{
+    aead::{rand_core::RngCore, Aead, Key, KeyInit, OsRng}, Error, XChaCha20Poly1305,
+    XNonce,
+};
 use lambdaworks_math::{
     cyclic_group::IsGroup,
     elliptic_curve::{short_weierstrass::curves::stark_curve::StarkCurve, traits::IsEllipticCurve},
-    field::{
-        element::FieldElement, fields::fft_friendly::stark_252_prime_field::Stark252PrimeField,
-    },
     polynomial::Polynomial,
     traits::ByteConversion,
 };
@@ -56,13 +60,13 @@ pub struct PedersenDKG {
     coefficients: Vec<FE>,
     pub proof: PedersenDKGProof,
     pub partial_shares: Vec<FE>,
+    pub encrypted_dkg_shares: Vec<EncryptedDKGShare>,
 }
 
 impl PedersenDKG {
     /// - `n` - polynomial degree
-    pub fn new(n: usize, private_key: &FE) -> Self {
-        let mut random_coefficients: Vec<FE> = Vec::with_capacity(n);
-        random_coefficients.fill_with(get_random_fe_scalar);
+    pub fn new(n: usize, private_key: &FE, players_pub_keys: &[CurvePoint]) -> Self {
+        let mut random_coefficients = vec![get_random_fe_scalar(); n + 1];
 
         let polynomial = Polynomial::new(&random_coefficients);
 
@@ -75,8 +79,7 @@ impl PedersenDKG {
         commitments.push(g.clone().operate_with_self(secret.representative()));
 
         for i in 1..n + 1 {
-            let field_el =
-                FieldElement::<Stark252PrimeField>::from_bytes_be(&i.to_be_bytes()).unwrap();
+            let field_el = FE::from(i as u64);
             let evaluation = polynomial.evaluate(&field_el);
             partial_shares.push(evaluation);
             let commitment = g
@@ -87,6 +90,16 @@ impl PedersenDKG {
 
         let secret_pok = SchnorrProof::sign_message(private_key, secret);
 
+        let mut encrypted_dkg_shares = vec![];
+        for (i, player_pub_key) in players_pub_keys.iter().enumerate() {
+            let evaluations = partial_shares.get(i).unwrap().to_bytes_be();
+
+            let ecdh_secret = ecdh_secret(private_key, player_pub_key).to_bytes_be();
+            let ciphertext =
+                EncryptedDKGShare::encrypt_dkg_share(&ecdh_secret, evaluations.as_ref());
+            encrypted_dkg_shares.push(ciphertext);
+        }
+
         Self {
             coefficients: random_coefficients,
             proof: PedersenDKGProof {
@@ -94,6 +107,67 @@ impl PedersenDKG {
                 commitments,
             },
             partial_shares,
+            encrypted_dkg_shares,
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct EncryptedDKGShare {
+    ciphertext: Vec<u8>,
+    nonce: Vec<u8>,
+}
+
+impl EncryptedDKGShare {
+    fn new(ciphertext: Vec<u8>, nonce: Vec<u8>) -> Self {
+        Self { ciphertext, nonce }
+    }
+
+    /// Encrypt DKG share with the player public key.
+    /// Returns (ciphertext, nonce)
+    fn encrypt_dkg_share(ecdh_secret: &[u8; 32], dkg_share: &[u8]) -> EncryptedDKGShare {
+        let cipher = XChaCha20Poly1305::new(<&Key<XChaCha20Poly1305>>::from(ecdh_secret));
+        let mut nonce_bytes = [0u8; 24];
+        OsRng.fill_bytes(&mut nonce_bytes);
+
+        let xnonce = XNonce::from_slice(&nonce_bytes);
+        let ciphertext = cipher.encrypt(&xnonce, dkg_share.as_ref()).unwrap();
+
+        EncryptedDKGShare::new(ciphertext, xnonce.to_vec())
+    }
+
+    /// Decrypt DKG share from player
+    pub fn decrypt_dkg_share(&self, ecdh_secret: &[u8; 32]) -> Result<Vec<u8>, Error> {
+        let cipher = XChaCha20Poly1305::new(<&Key<XChaCha20Poly1305>>::from(ecdh_secret));
+        let xnonce = XNonce::from_slice(&self.nonce);
+        let dkg_share = cipher.decrypt(xnonce, self.ciphertext.as_ref())?;
+
+        Ok(dkg_share)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{crypto::pedersen_dkg::EncryptedDKGShare, FE};
+    use lambdaworks_math::{
+        cyclic_group::IsGroup,
+        elliptic_curve::{
+            short_weierstrass::curves::stark_curve::StarkCurve, traits::IsEllipticCurve,
+        },
+        traits::ByteConversion,
+    };
+
+    #[test]
+    fn test_encryption_dkg_share() {
+        let share = FE::from(230).to_bytes_be();
+        let key = FE::from(12345678);
+        let ecdh_key = StarkCurve::generator()
+            .operate_with_self(key.representative())
+            .x()
+            .to_bytes_be();
+
+        let ciphertext = EncryptedDKGShare::encrypt_dkg_share(&ecdh_key, &share);
+
+        assert_eq!(ciphertext.decrypt_dkg_share(&ecdh_key).unwrap(), share);
     }
 }

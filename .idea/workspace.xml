@@ -15,9 +15,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="be82783f-a435-4be5-abef-eeb12c876134" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/lib/src/assets/casino.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/src/crypto/ecdh.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/src/crypto/pedersen_hash.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/assets/card.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/card.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/assets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/assets/player.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/player.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/assets/poker_table.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/poker_table.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/crypto/pedersen_dkg.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/pedersen_dkg.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/crypto/schnorr_proof.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/schnorr_proof.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/utils.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/utils.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,36 +35,192 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="RsBuildProfile:test" />
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Rust File" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "FilipLaurentiu"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/FilipLaurentiu/mental_texas_poker.git",
+    "accountId": "94fbd724-1378-4c73-9b94-9b965e9d6b2b"
+  }
+}]]></component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="omHRRCx2" />
   </component>
   <component name="MaliciousPackageCheckinHandlerState">
     <option name="packageCheck" value="true" />
   </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 2
+}]]></component>
+  <component name="ProjectId" id="39t9qFpCZfAwjcSLNJ1zqnI1CU1" />
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="2" id="Add" />
   </component>
+  <component name="ProjectViewState">
+    <option name="autoscrollFromSource" value="true" />
+    <option name="autoscrollToSource" value="true" />
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="openDirectoriesWithSingleClick" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Cargo.Test assets::player::tests::test_dkg.executor": "Run",
+    "Cargo.Test crypto::ecdh::tests::test_ecdh_secret.executor": "Run",
+    "Cargo.Test crypto::pedersen_dkg::tests::test_encryption_dkg_share.executor": "Run",
+    "Cargo.Test elgamal::tests.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.rust.reset.selective.auto.import": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "master",
+    "junie.onboarding.icon.badge.shown": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "settings.editor.selected.configurable": "project.propVCSSupport.CommitDialog"
+    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
+    "settings.editor.selected.configurable": "project.propVCSSupport.CommitDialog",
+    "to.speed.mode.migration.done": "true"
   }
 }]]></component>
   <component name="RsExternalLinterProjectSettings">
     <option name="tool" value="Clippy" />
   </component>
+  <component name="RunManager" selected="Cargo.Test assets::player::tests::test_dkg">
+    <configuration name="Test assets::player::tests::test_dkg" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="buildProfileId" value="test" />
+      <option name="command" value="test --package lib --lib assets::player::tests::test_dkg -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test crypto::ecdh::tests::test_ecdh_secret" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package lib --lib crypto::ecdh::tests::test_ecdh_secret -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test crypto::pedersen_dkg::tests::test_encryption_dkg_share" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package lib --lib crypto::pedersen_dkg::tests::test_encryption_dkg_share -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test elgamal::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package lib --lib crypto::elgamal::tests" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Cargo.Test assets::player::tests::test_dkg" />
+        <item itemvalue="Cargo.Test crypto::pedersen_dkg::tests::test_encryption_dkg_share" />
+        <item itemvalue="Cargo.Test elgamal::tests" />
+        <item itemvalue="Cargo.Test crypto::ecdh::tests::test_ecdh_secret" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="RustProjectSettings">
     <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
   </component>
   <component name="TaskManager">
+    <task id="LOCAL-00001" summary="Update pedersen_dkg.rs">
+      <option name="closed" value="true" />
+      <created>1771420074710</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1771420074710</updated>
+    </task>
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="be82783f-a435-4be5-abef-eeb12c876134" name="Changes" comment="" />
+      <created>1771504690557</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1771504690557</updated>
+      <workItem from="1771504692026" duration="11870000" />
+    </task>
+    <task id="LOCAL-00002" summary="Use lambdaworks types">
+      <option name="closed" value="true" />
+      <created>1771511731423</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1771511731423</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+    <MESSAGE value="Update pedersen_dkg.rs" />
+    <MESSAGE value="Use lambdaworks types" />
+    <option name="LAST_COMMIT_MESSAGE" value="Use lambdaworks types" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
