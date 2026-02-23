@@ -1,12 +1,21 @@
-use crate::{utils::get_random_fe, CurvePoint, FE};
+use crate::assets::player::Account;
+use crate::{utils::get_random_fe, FE};
 use crypto_bigint::U256;
 use lambdaworks_crypto::hash::pedersen::{Pedersen, PedersenStarkCurve};
 use std::collections::HashMap;
 
+#[derive(Eq, PartialEq)]
 pub enum PokerTableStatus {
     Waiting,
-    Playing,
+    Playing(PokerTableStatusPlaying),
     Full,
+}
+
+#[derive(Eq, PartialEq)]
+pub enum PokerTableStatusPlaying {
+    PedersenDKGStarted,
+    PedersenDKGCommitmentsRegistered,
+    PedersenDKGEnded,
 }
 
 pub enum PokerTableType {
@@ -47,17 +56,41 @@ pub struct RakeFee {
 
 pub struct PokerTable {
     pub table_id: FE,
-    pub current_game_id: FE,
     pub table_type: PokerTableType,
     pub status: PokerTableStatus,
+    pub rake: Rake,
     pub max_players: usize,
     pub min_players: usize,
-    pub players_addresses: Vec<FE>,
     pub pending_players_addresses: Vec<FE>,
-    pub players_pub_keys: HashMap<FE, (FE, FE)>,
     pub players_funds: HashMap<FE, U256>,
+    pub game_id: FE,
     pub current_deck_hash: Option<FE>,
-    pub rake: Rake,
+    pub dkg_commitments: HashMap<FE, FE>,
+    pub players_addresses: Vec<FE>,
+    // address to seat
+    pub player_seat: HashMap<FE, usize>,
+}
+
+impl Default for PokerTable {
+    fn default() -> Self {
+        Self {
+            table_id: Default::default(),
+            table_type: PokerTableType::BuyIn(BuyInPokerTableType {
+                buy_in: U256::from_u8(0),
+            }),
+            status: PokerTableStatus::Waiting,
+            max_players: 0,
+            min_players: 0,
+            pending_players_addresses: vec![],
+            players_funds: Default::default(),
+            game_id: Default::default(),
+            current_deck_hash: None,
+            dkg_commitments: Default::default(),
+            players_addresses: vec![],
+            rake: Default::default(),
+            player_seat: Default::default(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -66,6 +99,14 @@ pub enum NewPlayerError {
     InvalidSignature,
     FundingError,
 }
+
+#[derive(Debug)]
+pub enum RegisterDKGCommitmentError {
+    InvalidActivePlayer,
+    InvalidPedersenDKGStatus,
+    AlreadyRegistered,
+}
+
 impl PokerTable {
     pub(crate) fn new(
         table_type: PokerTableType,
@@ -75,17 +116,11 @@ impl PokerTable {
     ) -> Self {
         Self {
             table_id: get_random_fe(),
-            current_game_id: FE::zero(),
             table_type,
-            status: PokerTableStatus::Waiting,
             max_players,
             min_players,
-            players_addresses: vec![],
-            pending_players_addresses: vec![],
-            players_pub_keys: HashMap::new(),
-            players_funds: HashMap::new(),
-            current_deck_hash: None,
             rake,
+            ..Default::default()
         }
     }
 
@@ -93,9 +128,9 @@ impl PokerTable {
     /// Returns the table seat of the player.
     pub fn add_player(
         &mut self,
-        player: &FE,
-        pub_key: &CurvePoint,
+        account_address: &FE,
         buy_in: U256,
+        seat: Option<usize>,
     ) -> Result<usize, NewPlayerError> {
         match &self.table_type {
             PokerTableType::BuyIn(buy_in_table) => {
@@ -111,27 +146,75 @@ impl PokerTable {
         }
         match self.status {
             PokerTableStatus::Waiting => {
-                let table_position = self.register_player(player, buy_in, pub_key);
+                self.register_player(account_address, buy_in, seat);
 
                 // game could start if enough players are in the waiting queue
                 if self.pending_players_addresses.len() == self.min_players {
-                    self.status = PokerTableStatus::Playing;
+                    self.status =
+                        PokerTableStatus::Playing(PokerTableStatusPlaying::PedersenDKGStarted);
                     self.start_game();
                 }
+
+                Ok(self.players_addresses.len())
+            }
+            PokerTableStatus::Playing(_) => {
+                self.register_player(account_address, buy_in, seat);
+
+                let table_position =
+                    self.pending_players_addresses.len() + self.players_addresses.len();
+
                 Ok(table_position)
             }
-            PokerTableStatus::Playing => Ok(self.register_player(player, buy_in, pub_key)),
             PokerTableStatus::Full => Err(NewPlayerError::FullTable),
         }
     }
-    fn register_player(&mut self, player: &FE, buy_in: U256, pub_key: &CurvePoint) -> usize {
-        self.pending_players_addresses.push(*player);
-        self.players_funds.insert(*player, buy_in);
-        self.players_pub_keys
-            .insert(*player, (*pub_key.x(), *pub_key.y()));
-        self.transfer_player_funds(player, buy_in);
+    fn register_player(&mut self, account_address: &FE, buy_in: U256, seat: Option<usize>) {
+        self.pending_players_addresses.push(*account_address);
+        self.players_funds.insert(*account_address, buy_in);
+        if let Some(_seat_preference) = seat {
+            todo!()
+        } else {
+            let next_available_seat =
+                self.players_addresses.len() + self.pending_players_addresses.len();
+            self.player_seat
+                .insert(*account_address, next_available_seat);
+        }
 
-        self.players_addresses.len()
+        self.transfer_from(account_address, buy_in);
+    }
+
+    /// Register DKG commitment.
+    pub fn register_dkg_commitment(
+        &mut self,
+        dkg_commitment_hash: &FE,
+        sender: &Account,
+    ) -> Result<(), RegisterDKGCommitmentError> {
+        if self.status != PokerTableStatus::Playing(PokerTableStatusPlaying::PedersenDKGStarted) {
+            return Err(RegisterDKGCommitmentError::InvalidPedersenDKGStatus);
+        }
+
+        if let Some(_) = self.dkg_commitments.get(&dkg_commitment_hash) {
+            return Err(RegisterDKGCommitmentError::AlreadyRegistered);
+        }
+
+        if !self.players_addresses.contains(&sender.address) {
+            return Err(RegisterDKGCommitmentError::InvalidActivePlayer);
+        }
+
+        self.dkg_commitments
+            .insert(sender.address, *dkg_commitment_hash);
+
+        // all commitments are registered
+        if self.dkg_commitments.len() == self.players_addresses.len() {
+            self.status = PokerTableStatus::Playing(
+                PokerTableStatusPlaying::PedersenDKGCommitmentsRegistered,
+            );
+        }
+
+        Ok(())
+    }
+    pub fn get_player_seat(&self, x: &FE) -> Option<&usize> {
+        self.player_seat.get(x)
     }
 
     pub fn leave_table() {
@@ -143,9 +226,15 @@ impl PokerTable {
     }
 
     pub fn start_game(&mut self) {
-        // generate new unique game id
-        self.current_game_id = PedersenStarkCurve::hash(&self.current_game_id, &get_random_fe());
+        let new_game_id = PedersenStarkCurve::hash(&self.game_id, &get_random_fe());
+        // pending players are now active
+        self.players_addresses = self.pending_players_addresses.clone();
+
+        // empty pending players list
+        self.pending_players_addresses = vec![];
+
+        self.status = PokerTableStatus::Playing(PokerTableStatusPlaying::PedersenDKGStarted);
     }
 
-    fn transfer_player_funds(&self, player: &FE, buy_in: U256) {}
+    fn transfer_from(&self, address: &FE, buy_in: U256) {}
 }

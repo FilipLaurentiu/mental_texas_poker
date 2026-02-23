@@ -14,7 +14,7 @@ use lambdaworks_math::{
 
 /// From https://github.com/lambdaclass/lambdaworks/blob/ca9241e29bcacd253fe011aa3494853fe6f799f1/examples/ecdsa-signature/src/ecdsa.rs
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Signature {
+pub struct EcdsaSignature {
     /// The x-coordinate of the random point R = k*G (mod n)
     pub r: FE,
     /// The signature proof s = k^(-1) * (z + r*d) (mod n)
@@ -60,18 +60,18 @@ fn is_point_on_curve(point: &CurvePoint) -> bool {
     y_sq == rhs
 }
 
-impl Signature {
+impl EcdsaSignature {
     /// Create a new signature from r and s values.
     ///
     /// Returns an error if r or s is zero.
-    pub fn new(r: FE, s: FE) -> Result<Self, EcdsaError> {
-        if r == FE::zero() {
+    pub fn new(r: &FE, s: &FE) -> Result<Self, EcdsaError> {
+        if *r == FE::zero() {
             return Err(EcdsaError::InvalidRValue);
         }
-        if s == FE::zero() {
+        if *s == FE::zero() {
             return Err(EcdsaError::InvalidSValue);
         }
-        Ok(Self { r, s })
+        Ok(Self { r: *r, s: *s })
     }
 
     /// Serialize the signature to bytes (64 bytes: 32 for r, 32 for s).
@@ -89,7 +89,7 @@ impl Signature {
     pub fn from_bytes(bytes: &[u8; 64]) -> Result<Self, EcdsaError> {
         let r = FE::from_bytes_be(&bytes[..32]).map_err(|_| EcdsaError::InvalidRValue)?;
         let s = FE::from_bytes_be(&bytes[32..]).map_err(|_| EcdsaError::InvalidSValue)?;
-        Self::new(r, s)
+        Self::new(&r, &s)
     }
 
     /// Sign a message hash using ECDSA.
@@ -146,7 +146,7 @@ impl Signature {
             s = &CURVE_ORDER_FE - s;
         }
 
-        Self::new(r, s)
+        Self::new(&r, &s)
     }
 
     pub fn verify(
@@ -218,7 +218,7 @@ impl Signature {
 
 #[cfg(test)]
 mod tests {
-    use crate::{crypto::ecdsa::Signature, utils::get_random_fe_scalar, FE};
+    use crate::{crypto::ecdsa::EcdsaSignature, utils::get_random_fe_scalar, FE};
     use lambdaworks_crypto::hash::pedersen::{Pedersen, PedersenStarkCurve};
     use lambdaworks_math::{
         cyclic_group::IsGroup,
@@ -236,7 +236,7 @@ mod tests {
         /// message
         let message = PedersenStarkCurve::hash(&FE::from(20), &FE::from(30));
 
-        let signature = Signature::sign(&message.to_bytes_be(), &private_key, &nonce).unwrap();
+        let signature = EcdsaSignature::sign(&message.to_bytes_be(), &private_key, &nonce).unwrap();
 
         assert!(
             signature

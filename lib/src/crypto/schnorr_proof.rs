@@ -1,6 +1,6 @@
 use crate::{
-    constants::CURVE_ORDER_FE, utils::{add_mod, get_random_fe_scalar, mul_mod},
-    CurvePoint,
+    constants::CURVE_ORDER_FE,
+    utils::{add_mod, get_random_fe_scalar, mul_mod},
     FE,
 };
 use crypto_bigint::rand_core::RngCore;
@@ -11,15 +11,20 @@ use lambdaworks_math::{
     traits::ByteConversion,
 };
 
+use crate::crypto::utils::new_ec_from_x;
 use rand::{Rng, SeedableRng};
 use std::{
     hash::Hash,
     ops::{Div, Mul, Neg},
 };
 
+/// Schnorr signature
+///
+/// - `message` - Signed message
+/// - `signature` - Compressed signature (Rx - compressed, s)
 pub struct SchnorrProof {
     message: FE,
-    signature: (CurvePoint, FE),
+    signature: (FE, FE),
 }
 
 impl SchnorrProof {
@@ -29,6 +34,9 @@ impl SchnorrProof {
         let k = get_random_fe_scalar();
         // R = k*G.
         let R = g.operate_with_self(k.representative()).to_affine();
+
+        // for consistency
+        let R = new_ec_from_x(R.x()).unwrap();
 
         // compute e = H(R, H(message))
         let e = PedersenStarkCurve::hash(&PedersenStarkCurve::hash(R.x(), R.y()), message);
@@ -42,22 +50,28 @@ impl SchnorrProof {
 
         Self {
             message: message.clone(),
-            signature: (R, s),
+            signature: (*R.x(), s),
         }
     }
 
-    pub fn verify_signature(&self, public_key: &CurvePoint) -> bool {
+    pub fn verify_signature(&self, pk: &FE) -> bool {
         let g = StarkCurve::generator();
-        let (R, s) = &self.signature;
+        let (r, s) = &self.signature;
+
+        let R = new_ec_from_x(r).unwrap();
 
         let e = PedersenStarkCurve::hash(&PedersenStarkCurve::hash(R.x(), R.y()), &self.message);
 
-        let R_v = g
-            .operate_with_self(s.representative())
-            .operate_with(&public_key.operate_with_self(e.representative()).neg())
-            .to_affine();
+        if let Some(pub_key) = new_ec_from_x(pk) {
+            let R_v = g
+                .operate_with_self(s.representative())
+                .operate_with(&pub_key.operate_with_self(e.representative()).neg())
+                .to_affine();
 
-        R_v == *R
+            R_v == R
+        } else {
+            false
+        }
     }
 }
 
@@ -82,7 +96,7 @@ mod tests {
             .operate_with_self(secret_key.representative())
             .to_affine();
 
-        let is_valid = proof.verify_signature(&pub_key);
+        let is_valid = proof.verify_signature(&pub_key.x());
         println!("Valid proof: {}", is_valid);
         assert_eq!(is_valid, true);
     }

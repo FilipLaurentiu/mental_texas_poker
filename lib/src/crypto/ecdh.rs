@@ -1,10 +1,18 @@
-use crate::{CurvePoint, FE};
+use crate::{crypto::utils::new_ec_from_x, FE};
 use lambdaworks_math::cyclic_group::IsGroup;
 
+#[derive(Debug)]
+pub enum EcdhSecretError {
+    InvalidCurvePoint,
+}
+
 /// Compute Diffie-Hellman secret key from the secret key and the other player public key.
-pub fn ecdh_secret(secret_key: &FE, player_pub_key: &CurvePoint) -> FE {
-    let secret = player_pub_key.operate_with_self(secret_key.representative());
-    *secret.to_affine().x()
+/// - `sk` - Secret key
+/// - `pk_x` - Public key x coordinate
+pub fn ecdh_secret(sk: &FE, pk_x: &FE) -> Result<FE, EcdhSecretError> {
+    let player_pub_key = new_ec_from_x(pk_x).ok_or(EcdhSecretError::InvalidCurvePoint)?;
+    let secret = player_pub_key.operate_with_self(sk.representative());
+    Ok(*secret.to_affine().x())
 }
 
 #[cfg(test)]
@@ -25,8 +33,8 @@ mod tests {
         let pub_key2 = g.operate_with_self(private_key2.representative());
 
         assert_eq!(
-            ecdh_secret(&private_key1, &pub_key2),
-            ecdh_secret(&private_key2, &pub_key1)
+            ecdh_secret(&private_key1, &pub_key2.to_affine().x()).unwrap(),
+            ecdh_secret(&private_key2, &pub_key1.to_affine().x()).unwrap()
         );
     }
 }

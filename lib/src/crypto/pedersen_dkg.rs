@@ -39,7 +39,7 @@ impl PedersenDKGProof {
     ///
     /// - `dkg_share` - Received dkg share
     /// - `pub_key` - Sender public key
-    pub fn verify(&self, dkg_share: FE, pub_key: &CurvePoint) -> bool {
+    pub fn verify(&self, dkg_share: FE, pk: &FE) -> bool {
         let dkg_polynomial_degree = self.size();
 
         let mut x = dkg_share.clone();
@@ -51,7 +51,7 @@ impl PedersenDKGProof {
         }
         let dkg_share_point = StarkCurve::generator().operate_with_self(dkg_share.representative());
 
-        self.secret_pok.verify_signature(pub_key) && acc == dkg_share_point
+        self.secret_pok.verify_signature(pk) && acc == dkg_share_point
     }
 }
 
@@ -65,7 +65,7 @@ pub struct PedersenDKG {
 
 impl PedersenDKG {
     /// - `n` - polynomial degree
-    pub fn new(n: usize, private_key: &FE, players_pub_keys: &[CurvePoint]) -> Self {
+    pub fn new(n: usize, private_key: &FE, players_pub_keys: &[FE]) -> Self {
         let mut random_coefficients = vec![get_random_fe_scalar(); n + 1];
 
         let polynomial = Polynomial::new(&random_coefficients);
@@ -91,10 +91,10 @@ impl PedersenDKG {
         let secret_pok = SchnorrProof::sign_message(private_key, secret);
 
         let mut encrypted_dkg_shares = vec![];
-        for (i, player_pub_key) in players_pub_keys.iter().enumerate() {
+        for (i, pk) in players_pub_keys.iter().enumerate() {
             let evaluations = partial_shares.get(i).unwrap().to_bytes_be();
 
-            let ecdh_secret = ecdh_secret(private_key, player_pub_key).to_bytes_be();
+            let ecdh_secret = ecdh_secret(private_key, pk).unwrap().to_bytes_be();
             let ciphertext =
                 EncryptedDKGShare::encrypt_dkg_share(&ecdh_secret, evaluations.as_ref());
             encrypted_dkg_shares.push(ciphertext);
