@@ -10,8 +10,7 @@ use crate::{
         utils::new_ec_from_x,
     },
     CurvePoint,
-    FE
-    ,
+    FE,
 };
 use lambdaworks_crypto::hash::pedersen::{Pedersen, PedersenStarkCurve};
 use lambdaworks_math::{
@@ -142,7 +141,9 @@ impl<'a> Player<'a> {
         table: &PokerTable,
         address: &FE,
     ) -> Result<&EncryptedDKGShare, GetPlayerDKGShareError> {
-        if table.status != PokerTableStatus::Playing(PokerTableStatusPlaying::PedersenDKGCommitmentsRegistered) {
+        if table.status
+            != PokerTableStatus::Playing(PokerTableStatusPlaying::PedersenDKGCommitmentsRegistered)
+        {
             return Err(GetPlayerDKGShareError::UnfinishedPedersenDKG);
         }
 
@@ -182,9 +183,7 @@ impl<'a> Player<'a> {
             }
         }
 
-        let ecdh_secret = ecdh_secret(&self.account.pk, pk)
-            .unwrap()
-            .to_bytes_be();
+        let ecdh_secret = ecdh_secret(&self.account.pk, pk).unwrap().to_bytes_be();
         let dkg_share = encrypted_dkg_share
             .decrypt_dkg_share(&ecdh_secret)
             .map_err(|_| ReceiveDKGShareError::DKGDecryptionFail)?;
@@ -266,7 +265,7 @@ mod tests {
         player1
             .receive_dkg_share(
                 &player2.get_pedersen_dkg_proof().unwrap(),
-                player2
+                &player2
                     .get_player_dkg_share(&poker_table, &player1.account.address)
                     .unwrap(),
                 &player2.pub_key(),
@@ -276,10 +275,50 @@ mod tests {
         player1
             .receive_dkg_share(
                 &player3.get_pedersen_dkg_proof().unwrap(),
-                player3
+                &player3
                     .get_player_dkg_share(&poker_table, &player1.account.address)
                     .unwrap(),
                 &player3.pub_key(),
+            )
+            .unwrap();
+
+        player2
+            .receive_dkg_share(
+                &player1.get_pedersen_dkg_proof().unwrap(),
+                &player1
+                    .get_player_dkg_share(&poker_table, &player2.account.address)
+                    .unwrap(),
+                &player1.pub_key(),
+            )
+            .unwrap();
+
+        player2
+            .receive_dkg_share(
+                &player3.get_pedersen_dkg_proof().unwrap(),
+                &player3
+                    .get_player_dkg_share(&poker_table, &player2.account.address)
+                    .unwrap(),
+                &player3.pub_key(),
+            )
+            .unwrap();
+
+        player3
+            .receive_dkg_share(
+                &player1.get_pedersen_dkg_proof().unwrap(),
+                &player1
+                    .get_player_dkg_share(&poker_table, &player2.account.address)
+                    .unwrap(),
+                &player1.pub_key(),
+            )
+            .unwrap();
+
+        player3
+            .receive_dkg_share(
+                &player2.get_pedersen_dkg_proof().unwrap(),
+                &player2
+                    .get_player_dkg_share(&poker_table, &player2.account.address)
+                    .unwrap(),
+                &player2.pub_key(),
             )
             .unwrap();
     }

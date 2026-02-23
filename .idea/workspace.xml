@@ -15,16 +15,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="be82783f-a435-4be5-abef-eeb12c876134" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/lib/src/crypto/utils.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/assets/player.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/player.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/assets/poker_table.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/poker_table.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/crypto/ecdh.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/ecdh.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/crypto/ecdsa.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/ecdsa.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/crypto/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/crypto/pedersen_dkg.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/pedersen_dkg.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/crypto/schnorr_proof.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/schnorr_proof.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -219,7 +213,7 @@
       <workItem from="1771504692026" duration="11892000" />
       <workItem from="1771584843494" duration="11269000" />
       <workItem from="1771602732495" duration="4961000" />
-      <workItem from="1771839257634" duration="11138000" />
+      <workItem from="1771839257634" duration="11392000" />
     </task>
     <task id="LOCAL-00002" summary="Use lambdaworks types">
       <option name="closed" value="true" />
@@ -237,7 +231,15 @@
       <option name="project" value="LOCAL" />
       <updated>1771523109338</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="In progress">
+      <option name="closed" value="true" />
+      <created>1771859884560</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1771859884560</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -258,12 +260,12 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/lib/src/assets/player.rs</url>
-          <line>266</line>
+          <line>265</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/lib/src/assets/player.rs</url>
-          <line>184</line>
+          <line>185</line>
           <option name="timeStamp" value="14" />
         </line-breakpoint>
       </breakpoints>

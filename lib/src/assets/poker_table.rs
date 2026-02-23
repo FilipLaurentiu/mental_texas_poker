@@ -1,5 +1,4 @@
-use crate::assets::player::Account;
-use crate::{utils::get_random_fe, FE};
+use crate::{assets::player::Account, utils::get_random_fe, FE};
 use crypto_bigint::U256;
 use lambdaworks_crypto::hash::pedersen::{Pedersen, PedersenStarkCurve};
 use std::collections::HashMap;
