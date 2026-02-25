@@ -1,5 +1,12 @@
 use crate::{
-    crypto::{ecdh::ecdh_secret, schnorr_proof::SchnorrProof}, utils::get_random_fe_scalar,
+    assets::player::Account, constants::CURVE_ORDER_FE,
+    crypto::utils::ec_array_commitment,
+    crypto::{
+        ecdsa::{EcdsaError, EcdsaSignature},
+        pedersen_dkg::NewPedersenDKGError::SignatureError,
+        pedersen_hash::hash_array,
+    },
+    utils::{cairo_short_string_to_fe, get_random_fe, polynomial_evaluation_mod},
     CurvePoint,
     FE,
 };
@@ -7,108 +14,127 @@ use chacha20poly1305::{
     aead::{rand_core::RngCore, Aead, Key, KeyInit, OsRng}, Error, XChaCha20Poly1305,
     XNonce,
 };
+use lambdaworks_crypto::hash::pedersen::{Pedersen, PedersenStarkCurve};
 use lambdaworks_math::{
     cyclic_group::IsGroup,
-    elliptic_curve::{short_weierstrass::curves::stark_curve::StarkCurve, traits::IsEllipticCurve},
-    polynomial::Polynomial,
+    elliptic_curve::{short_weierstrass::curves::stark_curve::StarkCurve, traits::IsEllipticCurve}
+    ,
     traits::ByteConversion,
 };
+use std::collections::HashMap;
 
 /// Pedersen DKG Proof
 ///
 /// - `secret_pok` - Proof of knowledge of the shared secret.
 /// - `commitment` - Commitment of the coefficients. The first entry is the commitment of the secret value.
 pub struct PedersenDKGProof {
-    secret_pok: SchnorrProof,
+    secret_pok: EcdsaSignature,
     pub commitments: Vec<CurvePoint>,
 }
 
+pub enum VerifyDKGError {
+    InvalidPoK,
+    InvalidDKGShare,
+}
+
 impl PedersenDKGProof {
-    fn new(commitments: Vec<CurvePoint>, secret_pok: SchnorrProof) -> Self {
+    fn new(commitments: Vec<CurvePoint>, secret_pok: EcdsaSignature) -> Self {
         Self {
             secret_pok,
             commitments,
         }
     }
 
-    pub fn size(&self) -> usize {
-        self.commitments.len() - 1
+    pub fn commitment_hash(&self) -> FE {
+        hash_array(
+            &self
+                .commitments
+                .iter()
+                .map(|point| PedersenStarkCurve::hash(point.to_affine().x(), point.to_affine().y()))
+                .collect::<Vec<FE>>(),
+        )
     }
 
     /// Verify Pedersen DKG commitment.
     ///
     /// - `dkg_share` - Received dkg share
-    /// - `pub_key` - Sender public key
-    pub fn verify(&self, dkg_share: FE, pk: &FE) -> bool {
-        let dkg_polynomial_degree = self.size();
+    pub fn verify(&self, dkg_share: FE, x: &FE) -> Result<(), VerifyDKGError> {
+        self.verify_pok()?;
 
-        let mut x = dkg_share.clone();
-        let acc = StarkCurve::generator();
-        for i in 1..dkg_polynomial_degree {
-            let coefficient_commitment = self.commitments.get(i).unwrap();
-            acc.operate_with(&coefficient_commitment.operate_with_self(x.representative()));
-            x = x.double();
-        }
+        let acc = self
+            .commitments
+            .iter()
+            .rev()
+            .fold(CurvePoint::neutral_element(), |acc, commitment| {
+                commitment.operate_with(&acc.operate_with_self(x.representative()))
+            });
+
         let dkg_share_point = StarkCurve::generator().operate_with_self(dkg_share.representative());
 
-        self.secret_pok.verify_signature(pk) && acc == dkg_share_point
+        if acc.to_affine() != dkg_share_point.to_affine() {
+            return Err(VerifyDKGError::InvalidDKGShare);
+        }
+
+        Ok(())
+    }
+
+    fn verify_pok(&self) -> Result<(), VerifyDKGError> {
+        let secret_commitment = &self.commitments[0];
+        self.secret_pok
+            .verify(
+                &cairo_short_string_to_fe("BlackBox").unwrap().to_bytes_be(),
+                &secret_commitment,
+            )
+            .map_err(|_| VerifyDKGError::InvalidPoK)?;
+
+        Ok(())
     }
 }
 
 /// Pedersen Distributed Key Generation
 pub struct PedersenDKG {
-    coefficients: Vec<FE>,
     pub proof: PedersenDKGProof,
-    pub partial_shares: Vec<FE>,
-    pub encrypted_dkg_shares: Vec<EncryptedDKGShare>,
+    // address -> share
+    pub dkg_shares: HashMap<FE, FE>,
+}
+
+#[derive(Debug)]
+pub enum NewPedersenDKGError {
+    SignatureError(EcdsaError),
 }
 
 impl PedersenDKG {
-    /// - `n` - polynomial degree
-    pub fn new(n: usize, private_key: &FE, players_pub_keys: &[FE]) -> Self {
-        let mut random_coefficients = vec![get_random_fe_scalar(); n + 1];
+    /// - `sk` - Account's secret key used to generate the Schnorr proof
+    /// - `players_accounts` - Players accounts to encrypt their shares
+    pub fn new(sk: &FE, players_accounts: &Vec<&Account>) -> Result<Self, NewPedersenDKGError> {
+        let polynomial_degree = players_accounts.len() + 1;
+        let random_coefficients: Vec<FE> =
+            (0..polynomial_degree).map(|_| get_random_fe()).collect();
 
-        let polynomial = Polynomial::new(&random_coefficients);
+        // sign a message with the secret part of the polynomial to prove knowledge
+        let secret_pok = EcdsaSignature::sign(
+            &cairo_short_string_to_fe("BlackBox").unwrap().to_bytes_be(),
+            &random_coefficients[0],
+            None,
+        )
+            .map_err(|err| SignatureError(err))?;
 
-        let mut commitments = vec![];
-        let mut partial_shares = vec![];
-        let g = StarkCurve::generator();
-
-        // commitment of the secret value, the constant part of the polynomial, f(0).
-        let secret = random_coefficients.first().unwrap();
-        commitments.push(g.clone().operate_with_self(secret.representative()));
-
-        for i in 1..n + 1 {
-            let field_el = FE::from(i as u64);
-            let evaluation = polynomial.evaluate(&field_el);
-            partial_shares.push(evaluation);
-            let commitment = g
-                .clone()
-                .operate_with_self(random_coefficients.get(i).unwrap().representative());
-            commitments.push(commitment);
+        let mut dkg_shares = HashMap::new();
+        for (i, account) in players_accounts.iter().enumerate() {
+            let x = FE::from((i + 1) as u64);
+            let evaluation = polynomial_evaluation_mod(&x, &random_coefficients, &CURVE_ORDER_FE);
+            dkg_shares.insert(account.address, evaluation);
         }
 
-        let secret_pok = SchnorrProof::sign_message(private_key, secret);
+        let commitments = ec_array_commitment(&random_coefficients);
 
-        let mut encrypted_dkg_shares = vec![];
-        for (i, pk) in players_pub_keys.iter().enumerate() {
-            let evaluations = partial_shares.get(i).unwrap().to_bytes_be();
-
-            let ecdh_secret = ecdh_secret(private_key, pk).unwrap().to_bytes_be();
-            let ciphertext =
-                EncryptedDKGShare::encrypt_dkg_share(&ecdh_secret, evaluations.as_ref());
-            encrypted_dkg_shares.push(ciphertext);
-        }
-
-        Self {
-            coefficients: random_coefficients,
+        Ok(Self {
             proof: PedersenDKGProof {
                 secret_pok,
                 commitments,
             },
-            partial_shares,
-            encrypted_dkg_shares,
-        }
+            dkg_shares,
+        })
     }
 }
 
@@ -125,22 +151,23 @@ impl EncryptedDKGShare {
 
     /// Encrypt DKG share with the player public key.
     /// Returns (ciphertext, nonce)
-    fn encrypt_dkg_share(ecdh_secret: &[u8; 32], dkg_share: &[u8]) -> EncryptedDKGShare {
+    pub(crate) fn encrypt_dkg_share(ecdh_secret: &[u8; 32], dkg_share: &[u8]) -> EncryptedDKGShare {
+        // TODO: Add authentication
         let cipher = XChaCha20Poly1305::new(<&Key<XChaCha20Poly1305>>::from(ecdh_secret));
         let mut nonce_bytes = [0u8; 24];
         OsRng.fill_bytes(&mut nonce_bytes);
 
-        let xnonce = XNonce::from_slice(&nonce_bytes);
-        let ciphertext = cipher.encrypt(&xnonce, dkg_share.as_ref()).unwrap();
+        let nonce = XNonce::from_slice(&nonce_bytes);
+        let ciphertext = cipher.encrypt(&nonce, dkg_share.as_ref()).unwrap();
 
-        EncryptedDKGShare::new(ciphertext, xnonce.to_vec())
+        EncryptedDKGShare::new(ciphertext, nonce.to_vec())
     }
 
     /// Decrypt DKG share from player
     pub fn decrypt_dkg_share(&self, ecdh_secret: &[u8; 32]) -> Result<Vec<u8>, Error> {
         let cipher = XChaCha20Poly1305::new(<&Key<XChaCha20Poly1305>>::from(ecdh_secret));
-        let xnonce = XNonce::from_slice(&self.nonce);
-        let dkg_share = cipher.decrypt(xnonce, self.ciphertext.as_ref())?;
+        let nonce = XNonce::from_slice(&self.nonce);
+        let dkg_share = cipher.decrypt(nonce, self.ciphertext.as_ref())?;
 
         Ok(dkg_share)
     }

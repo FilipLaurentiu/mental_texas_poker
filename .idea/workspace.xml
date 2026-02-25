@@ -17,8 +17,16 @@
     <list default="true" id="be82783f-a435-4be5-abef-eeb12c876134" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/lib/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/assets/casino.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/casino.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/assets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/assets/player.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/player.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/assets/poker_table.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/poker_table.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/ecdh.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/ecdh.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/ecdsa.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/ecdsa.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/pedersen_dkg.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/pedersen_dkg.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/utils.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/utils.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/utils.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/utils.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,8 +81,11 @@
     "Cargo.Test assets::player::tests::test_dkg.executor": "Run",
     "Cargo.Test crypto::ecdh::tests::test_ecdh_secret.executor": "Run",
     "Cargo.Test crypto::pedersen_dkg::tests::test_encryption_dkg_share.executor": "Run",
+    "Cargo.Test crypto::schnorr_proof::tests::test_proof.executor": "Run",
+    "Cargo.Test crypto::utils::tests::test_ec_array_commitment.executor": "Run",
     "Cargo.Test crypto::utils::tests::test_recover_from_x.executor": "Run",
     "Cargo.Test elgamal::tests.executor": "Run",
+    "Cargo.Test utils::tests::test_polynomial_evaluation_mod.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -88,14 +99,14 @@
     "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
     "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
-    "settings.editor.selected.configurable": "project.propVCSSupport.CommitDialog",
+    "settings.editor.selected.configurable": "preferences.intentionPowerPack",
     "to.speed.mode.migration.done": "true"
   }
 }]]></component>
   <component name="RsExternalLinterProjectSettings">
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager" selected="Cargo.Test crypto::ecdh::tests::test_ecdh_secret">
+  <component name="RunManager" selected="Cargo.Test assets::player::tests::test_dkg">
     <configuration name="Test assets::player::tests::test_dkg" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="buildProfileId" value="test" />
       <option name="command" value="test --package lib --lib assets::player::tests::test_dkg -- --exact" />
@@ -114,8 +125,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test crypto::ecdh::tests::test_ecdh_secret" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package lib --lib crypto::ecdh::tests::test_ecdh_secret -- --exact" />
+    <configuration name="Test crypto::schnorr_proof::tests::test_proof" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package lib --lib crypto::schnorr_proof::tests::test_proof -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -131,8 +142,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test crypto::pedersen_dkg::tests::test_encryption_dkg_share" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package lib --lib crypto::pedersen_dkg::tests::test_encryption_dkg_share -- --exact" />
+    <configuration name="Test crypto::utils::tests::test_ec_array_commitment" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package lib --lib crypto::utils::tests::test_ec_array_commitment -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -165,8 +176,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test elgamal::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package lib --lib crypto::elgamal::tests" />
+    <configuration name="Test utils::tests::test_polynomial_evaluation_mod" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package lib --lib utils::tests::test_polynomial_evaluation_mod -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -184,11 +195,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Cargo.Test crypto::ecdh::tests::test_ecdh_secret" />
         <item itemvalue="Cargo.Test assets::player::tests::test_dkg" />
+        <item itemvalue="Cargo.Test crypto::utils::tests::test_ec_array_commitment" />
+        <item itemvalue="Cargo.Test utils::tests::test_polynomial_evaluation_mod" />
+        <item itemvalue="Cargo.Test crypto::schnorr_proof::tests::test_proof" />
         <item itemvalue="Cargo.Test crypto::utils::tests::test_recover_from_x" />
-        <item itemvalue="Cargo.Test crypto::pedersen_dkg::tests::test_encryption_dkg_share" />
-        <item itemvalue="Cargo.Test elgamal::tests" />
       </list>
     </recent_temporary>
   </component>
@@ -213,7 +224,11 @@
       <workItem from="1771504692026" duration="11892000" />
       <workItem from="1771584843494" duration="11269000" />
       <workItem from="1771602732495" duration="4961000" />
-      <workItem from="1771839257634" duration="11392000" />
+      <workItem from="1771839257634" duration="13959000" />
+      <workItem from="1771866338376" duration="2333000" />
+      <workItem from="1771930448782" duration="16938000" />
+      <workItem from="1772006041454" duration="1904000" />
+      <workItem from="1772017698918" duration="15239000" />
     </task>
     <task id="LOCAL-00002" summary="Use lambdaworks types">
       <option name="closed" value="true" />
@@ -239,7 +254,15 @@
       <option name="project" value="LOCAL" />
       <updated>1771859884560</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="In progress">
+      <option name="closed" value="true" />
+      <created>1771860139117</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1771860139117</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -259,14 +282,19 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/lib/src/assets/player.rs</url>
-          <line>265</line>
-          <option name="timeStamp" value="11" />
+          <url>file://$PROJECT_DIR$/lib/src/crypto/pedersen_dkg.rs</url>
+          <line>74</line>
+          <option name="timeStamp" value="61" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/lib/src/assets/player.rs</url>
-          <line>185</line>
-          <option name="timeStamp" value="14" />
+          <line>190</line>
+          <option name="timeStamp" value="68" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/lib/src/assets/player.rs</url>
+          <line>261</line>
+          <option name="timeStamp" value="69" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

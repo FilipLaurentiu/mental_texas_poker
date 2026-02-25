@@ -1,10 +1,14 @@
-use crate::crypto::pedersen_hash::hash_array;
-use crate::{CurvePoint, FE};
+use crate::{crypto::pedersen_hash::hash_array, CurvePoint, FE};
 use crypto_bigint::rand_core::{OsRng, RngCore};
-use lambdaworks_math::elliptic_curve::short_weierstrass::curves::stark_curve::StarkCurve;
-use lambdaworks_math::elliptic_curve::short_weierstrass::traits::IsShortWeierstrass;
-use lambdaworks_math::elliptic_curve::traits::FromAffine;
-use lambdaworks_math::{traits::ByteConversion, unsigned_integer::element::U256};
+use lambdaworks_math::{
+    elliptic_curve::{
+        short_weierstrass::{curves::stark_curve::StarkCurve, traits::IsShortWeierstrass},
+        traits::FromAffine,
+    },
+    field::traits::{IsField, IsSubFieldOf},
+    traits::ByteConversion,
+    unsigned_integer::element::U256,
+};
 use num_bigint::{BigInt, BigUint};
 use num_integer::Integer;
 use num_traits::{identities::One, Zero};
@@ -172,4 +176,28 @@ pub(crate) fn inv_mod(operand: &FE, modulus: &FE) -> Option<FE> {
     result[(32 - buffer.len())..].copy_from_slice(&buffer[..]);
 
     Some(FE::from_bytes_be(&result).unwrap())
+}
+
+/// https://en.wikipedia.org/wiki/Horner%27s_method
+pub fn polynomial_evaluation_mod(x: &FE, coefficients: &[FE], modulus: &FE) -> FE {
+    coefficients.iter().rev().fold(FE::zero(), |acc, coeff| {
+        add_mod(&coeff, &mul_mod(&acc, x, modulus), modulus)
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::constants::CURVE_ORDER_FE;
+    use crate::utils::polynomial_evaluation_mod;
+    use crate::FE;
+
+    #[test]
+    fn test_polynomial_evaluation_mod() {
+        let coefficients = vec![FE::from(2), FE::from(5), FE::from(6), FE::from(7)];
+        let x = FE::from(3);
+
+        let evaluation = polynomial_evaluation_mod(&x, &coefficients, &CURVE_ORDER_FE);
+
+        assert_eq!(evaluation, FE::from(260))
+    }
 }

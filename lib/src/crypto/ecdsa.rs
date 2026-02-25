@@ -1,5 +1,5 @@
 use crate::{
-    constants::CURVE_ORDER_FE, utils::{add_mod, inv_mod, mul_mod},
+    constants::CURVE_ORDER_FE, utils::{add_mod, get_random_fe_scalar, inv_mod, mul_mod},
     CurvePoint,
     FE,
 };
@@ -107,8 +107,18 @@ impl EcdsaSignature {
     ///
     /// # Returns
     /// A signature (r, s) or an error if the inputs are invalid.
-    pub fn sign(message_hash: &[u8; 32], private_key: &FE, nonce: &FE) -> Result<Self, EcdsaError> {
+    pub fn sign(
+        message_hash: &[u8; 32],
+        private_key: &FE,
+        nonce: Option<&FE>,
+    ) -> Result<Self, EcdsaError> {
         // Validate nonce is not zero
+        let nonce = if nonce.is_some() {
+            nonce.unwrap()
+        } else {
+            &get_random_fe_scalar()
+        };
+
         if *nonce == FE::zero() {
             return Err(EcdsaError::InvalidNonce);
         }
@@ -236,7 +246,8 @@ mod tests {
         /// message
         let message = PedersenStarkCurve::hash(&FE::from(20), &FE::from(30));
 
-        let signature = EcdsaSignature::sign(&message.to_bytes_be(), &private_key, &nonce).unwrap();
+        let signature =
+            EcdsaSignature::sign(&message.to_bytes_be(), &private_key, Some(&nonce)).unwrap();
 
         assert!(
             signature
