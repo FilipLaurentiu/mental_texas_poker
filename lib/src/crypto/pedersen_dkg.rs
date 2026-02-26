@@ -1,10 +1,10 @@
 use crate::{
     assets::player::Account, constants::CURVE_ORDER_FE,
-    crypto::utils::ec_array_commitment,
     crypto::{
         ecdsa::{EcdsaError, EcdsaSignature},
         pedersen_dkg::NewPedersenDKGError::SignatureError,
         pedersen_hash::hash_array,
+        utils::ec_array_commitment,
     },
     utils::{cairo_short_string_to_fe, get_random_fe, polynomial_evaluation_mod},
     CurvePoint,
@@ -17,8 +17,7 @@ use chacha20poly1305::{
 use lambdaworks_crypto::hash::pedersen::{Pedersen, PedersenStarkCurve};
 use lambdaworks_math::{
     cyclic_group::IsGroup,
-    elliptic_curve::{short_weierstrass::curves::stark_curve::StarkCurve, traits::IsEllipticCurve}
-    ,
+    elliptic_curve::{short_weierstrass::curves::stark_curve::StarkCurve, traits::IsEllipticCurve},
     traits::ByteConversion,
 };
 use std::collections::HashMap;
@@ -29,7 +28,7 @@ use std::collections::HashMap;
 /// - `commitment` - Commitment of the coefficients. The first entry is the commitment of the secret value.
 pub struct PedersenDKGProof {
     secret_pok: EcdsaSignature,
-    pub commitments: Vec<CurvePoint>,
+    pub commitment: Vec<CurvePoint>,
 }
 
 pub enum VerifyDKGError {
@@ -41,14 +40,14 @@ impl PedersenDKGProof {
     fn new(commitments: Vec<CurvePoint>, secret_pok: EcdsaSignature) -> Self {
         Self {
             secret_pok,
-            commitments,
+            commitment: commitments,
         }
     }
 
     pub fn commitment_hash(&self) -> FE {
         hash_array(
             &self
-                .commitments
+                .commitment
                 .iter()
                 .map(|point| PedersenStarkCurve::hash(point.to_affine().x(), point.to_affine().y()))
                 .collect::<Vec<FE>>(),
@@ -58,11 +57,12 @@ impl PedersenDKGProof {
     /// Verify Pedersen DKG commitment.
     ///
     /// - `dkg_share` - Received dkg share
+    /// - `x` - evaluation point/seat number
     pub fn verify(&self, dkg_share: FE, x: &FE) -> Result<(), VerifyDKGError> {
         self.verify_pok()?;
 
         let acc = self
-            .commitments
+            .commitment
             .iter()
             .rev()
             .fold(CurvePoint::neutral_element(), |acc, commitment| {
@@ -79,7 +79,7 @@ impl PedersenDKGProof {
     }
 
     fn verify_pok(&self) -> Result<(), VerifyDKGError> {
-        let secret_commitment = &self.commitments[0];
+        let secret_commitment = &self.commitment[0];
         self.secret_pok
             .verify(
                 &cairo_short_string_to_fe("BlackBox").unwrap().to_bytes_be(),
@@ -120,9 +120,9 @@ impl PedersenDKG {
             .map_err(|err| SignatureError(err))?;
 
         let mut dkg_shares = HashMap::new();
-        for (i, account) in players_accounts.iter().enumerate() {
-            let x = FE::from((i + 1) as u64);
-            let evaluation = polynomial_evaluation_mod(&x, &random_coefficients, &CURVE_ORDER_FE);
+        for account in players_accounts.iter() {
+            let evaluation =
+                polynomial_evaluation_mod(&account.address, &random_coefficients, &CURVE_ORDER_FE);
             dkg_shares.insert(account.address, evaluation);
         }
 
@@ -131,7 +131,7 @@ impl PedersenDKG {
         Ok(Self {
             proof: PedersenDKGProof {
                 secret_pok,
-                commitments,
+                commitment: commitments,
             },
             dkg_shares,
         })

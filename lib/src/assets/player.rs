@@ -52,15 +52,17 @@ impl Account {
     }
 }
 
-/// - `account` - on-chain account
-/// - `secret_key_share` - share of the distributed key
+/// - `account` - on-chain account\
 /// - `encrypted_cards` - encrypted cards that player owns
+/// - `decrypted_cards` - decrypted cards
+/// - `pedersen_dkg` - Pedersen DKG share
+/// - `secret_dkg_share` - share of the distributed key
 pub struct Player<'a> {
     account: &'a Account,
     encrypted_cards: Option<[CurvePoint; 2]>,
     decrypted_cards: Option<[Card; 2]>,
     pedersen_dkg: Option<PedersenDKG>,
-    secret_dkg_share: Option<FE>,
+    secret_dkg_share: FE,
     dkg_shares: Vec<FE>,
     // address -> share
     received_dkg_shares: HashMap<FE, FE>,
@@ -88,6 +90,7 @@ enum GetPlayerDKGShareError {
 pub enum RunPedersenDKGError {
     InvalidTableStatus,
     InvalidTable,
+    InvalidDKG,
     PedersenDKGError(NewPedersenDKGError),
 }
 
@@ -103,7 +106,7 @@ impl<'a> Player<'a> {
             encrypted_cards: None,
             decrypted_cards: None,
             pedersen_dkg: None,
-            secret_dkg_share: None,
+            secret_dkg_share: FE::zero(),
             dkg_shares: vec![],
             received_dkg_shares: HashMap::new(),
         }
@@ -120,6 +123,12 @@ impl<'a> Player<'a> {
             .map_err(|err| RunPedersenDKGError::PedersenDKGError(err))?;
 
         let commitment_hash = pedersen_dkg.proof.commitment_hash();
+
+        // add users share to the
+        self.secret_dkg_share = *pedersen_dkg
+            .dkg_shares
+            .get(&self.account.address)
+            .ok_or(RunPedersenDKGError::InvalidDKG)?;
 
         self.pedersen_dkg = Some(pedersen_dkg);
 
@@ -156,6 +165,7 @@ impl<'a> Player<'a> {
         let ciphertext =
             EncryptedDKGShare::encrypt_dkg_share(&ecdh_key.to_bytes_be(), &dkg_share.to_bytes_be());
 
+        // TODO: Sign the result
         Ok(ciphertext)
     }
 
@@ -187,21 +197,32 @@ impl<'a> Player<'a> {
         let share_fe = FE::from_bytes_be(&dkg_share)
             .map_err(|_| ReceiveDKGShareError::InvalidSharedElement)?;
 
-        let seat = poker_table.player_seat.get(&self.account.address).unwrap();
         if pedersen_dkg_proof
-            .verify(share_fe, &FE::from(*seat as u64))
+            .verify(share_fe, &self.account.address)
             .is_ok()
         {
             self.received_dkg_shares.insert(account.address, share_fe);
+
+            self.secret_dkg_share += share_fe;
+
             Ok(())
         } else {
             Err(ReceiveDKGShareError::InvalidDKGProof)
         }
     }
 
-    pub fn dkg_shared_key(&self) -> FE {
-        // sum of dkg shares from other players
-        unimplemented!()
+    pub fn dkg_shared_pk(&self) -> Option<CurvePoint> {
+        if let Some(pedersen_dkg) = &self.pedersen_dkg {
+            // if received all the dkg shares
+            if self.received_dkg_shares.len() == pedersen_dkg.dkg_shares.len() - 1 {
+                return Some(
+                    StarkCurve::generator()
+                        .operate_with_self(self.secret_dkg_share.representative()),
+                );
+            }
+        }
+
+        None
     }
 }
 
@@ -270,6 +291,20 @@ mod tests {
             )
             .expect("Receive dkg share fail");
 
+        // Don't register dkg share again
+        assert!(
+            player1
+                .receive_dkg_share(
+                    &poker_table,
+                    &player2.get_pedersen_dkg_proof().unwrap(),
+                    &player2
+                        .get_player_dkg_share(&poker_table, &player1.account)
+                        .unwrap(),
+                    &player2.account,
+                )
+                .is_err()
+        );
+
         player1
             .receive_dkg_share(
                 &poker_table,
@@ -280,6 +315,8 @@ mod tests {
                 &player3.account,
             )
             .expect("Receive dkg share fail");
+
+        assert!(player1.dkg_shared_pk().is_some());
 
         player2
             .receive_dkg_share(
