@@ -15,12 +15,34 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="be82783f-a435-4be5-abef-eeb12c876134" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/lib/src/crypto/bayer_groth/commitment.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/src/crypto/bayer_groth/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/src/crypto/bayer_groth/mul_arg.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/src/crypto/bayer_groth/multi_exp_arg.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/src/crypto/bayer_groth/product_arg.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/src/crypto/bayer_groth/shuffle.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/src/crypto/bayer_groth/transcript.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/src/crypto/fiat_shamir.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/lib/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/assets/card.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/card.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/assets/casino.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/casino.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/assets/deck.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/deck.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/assets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/assets/player.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/player.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/assets/poker_table.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/assets/poker_table.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/constants.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/constants.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/ecdh.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/ecdh.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/ecdsa.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/ecdsa.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/elgamal.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/elgamal.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/crypto/pedersen_dkg.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/pedersen_dkg.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/pedersen_hash.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/pedersen_hash.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/schnorr_proof.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/schnorr_proof.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/utils.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/utils.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/utils.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/utils.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -74,8 +96,12 @@
   "keyToString": {
     "Cargo.Test assets::deck::tests::test_card_to_curve_point.executor": "Debug",
     "Cargo.Test assets::deck::tests::test_map_deck_to_curve.executor": "Debug",
+    "Cargo.Test assets::deck::tests::test_recover_x.executor": "Run",
     "Cargo.Test assets::player::tests::test_dkg.executor": "Run",
+    "Cargo.Test assets::player::tests::test_player_encryption_decryption.executor": "Run",
     "Cargo.Test crypto::ecdh::tests::test_ecdh_secret.executor": "Run",
+    "Cargo.Test crypto::elgamal::tests::encrypt_decrypt_with_individual_keys.executor": "Run",
+    "Cargo.Test crypto::elgamal::tests::test_encryption_vector.executor": "Run",
     "Cargo.Test crypto::pedersen_dkg::tests::test_encryption_dkg_share.executor": "Run",
     "Cargo.Test crypto::schnorr_proof::tests::test_proof.executor": "Run",
     "Cargo.Test crypto::utils::tests::test_ec_array_commitment.executor": "Run",
@@ -90,38 +116,29 @@
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "master",
     "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "/home/filip/Work/mental_texas_poker/lib/src/crypto/bayer_groth",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
     "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
+    "org.rust.disableDetachedFileInspection/home/filip/Work/mental_texas_poker/lib/src/crypto/bayer-groth/lib.rs": "true",
     "settings.editor.selected.configurable": "preferences.intentionPowerPack",
     "to.speed.mode.migration.done": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/lib/src/crypto/bayer_groth" />
+      <recent name="$PROJECT_DIR$/lib/src/crypto/bayer-groth" />
+    </key>
+  </component>
   <component name="RsExternalLinterProjectSettings">
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager" selected="Cargo.Test assets::player::tests::test_dkg">
-    <configuration name="Test assets::deck::tests::test_card_to_curve_point" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package lib --lib assets::deck::tests::test_card_to_curve_point -- --exact" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <envs />
-      <option name="emulateTerminal" value="true" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="buildTarget" value="REMOTE" />
-      <option name="backtrace" value="SHORT" />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="Test assets::deck::tests::test_map_deck_to_curve" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package lib --lib assets::deck::tests::test_map_deck_to_curve -- --exact" />
+  <component name="RunManager" selected="Cargo.Test assets::player::tests::test_player_encryption_decryption">
+    <configuration name="Test assets::deck::tests::test_recover_x" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package lib --lib assets::deck::tests::test_recover_x -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -155,8 +172,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test crypto::utils::tests::test_ec_array_commitment" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package lib --lib crypto::utils::tests::test_ec_array_commitment -- --exact" />
+    <configuration name="Test assets::player::tests::test_player_encryption_decryption" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package lib --lib assets::player::tests::test_player_encryption_decryption -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -172,8 +189,25 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test utils::tests::test_polynomial_evaluation_mod" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package lib --lib utils::tests::test_polynomial_evaluation_mod -- --exact" />
+    <configuration name="Test crypto::elgamal::tests::encrypt_decrypt_with_individual_keys" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package lib --lib crypto::elgamal::tests::encrypt_decrypt_with_individual_keys -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test crypto::elgamal::tests::test_encryption_vector" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package lib --lib crypto::elgamal::tests::test_encryption_vector -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -191,11 +225,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Test assets::player::tests::test_player_encryption_decryption" />
+        <item itemvalue="Cargo.Test crypto::elgamal::tests::test_encryption_vector" />
+        <item itemvalue="Cargo.Test crypto::elgamal::tests::encrypt_decrypt_with_individual_keys" />
+        <item itemvalue="Cargo.Test assets::deck::tests::test_recover_x" />
         <item itemvalue="Cargo.Test assets::player::tests::test_dkg" />
-        <item itemvalue="Cargo.Test assets::deck::tests::test_map_deck_to_curve" />
-        <item itemvalue="Cargo.Test assets::deck::tests::test_card_to_curve_point" />
-        <item itemvalue="Cargo.Test crypto::utils::tests::test_ec_array_commitment" />
-        <item itemvalue="Cargo.Test utils::tests::test_polynomial_evaluation_mod" />
       </list>
     </recent_temporary>
   </component>
@@ -225,7 +259,17 @@
       <workItem from="1771930448782" duration="16938000" />
       <workItem from="1772006041454" duration="1904000" />
       <workItem from="1772017698918" duration="16181000" />
-      <workItem from="1772107991615" duration="11248000" />
+      <workItem from="1772107991615" duration="12321000" />
+      <workItem from="1772127924584" duration="193000" />
+      <workItem from="1772191975070" duration="11119000" />
+      <workItem from="1772468019812" duration="310000" />
+      <workItem from="1772544270223" duration="6205000" />
+      <workItem from="1772632961162" duration="19000" />
+      <workItem from="1772703609052" duration="186000" />
+      <workItem from="1772782375633" duration="1818000" />
+      <workItem from="1773073759082" duration="824000" />
+      <workItem from="1774017422433" duration="362000" />
+      <workItem from="1774017803393" duration="3135000" />
     </task>
     <task id="LOCAL-00002" summary="Use lambdaworks types">
       <option name="closed" value="true" />
@@ -267,7 +311,15 @@
       <option name="project" value="LOCAL" />
       <updated>1772038136085</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Minor improvements">
+      <option name="closed" value="true" />
+      <created>1772122594329</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1772122594329</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -279,7 +331,8 @@
     <MESSAGE value="Use lambdaworks types" />
     <MESSAGE value="In progress" />
     <MESSAGE value="fix `receive_dkg_share` function" />
-    <option name="LAST_COMMIT_MESSAGE" value="fix `receive_dkg_share` function" />
+    <MESSAGE value="Minor improvements" />
+    <option name="LAST_COMMIT_MESSAGE" value="Minor improvements" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
@@ -288,9 +341,9 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/lib/src/assets/player.rs</url>
-          <line>282</line>
-          <option name="timeStamp" value="69" />
+          <url>file://$USER_HOME$/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lambdaworks-math-0.13.0/src/field/element.rs</url>
+          <line>596</line>
+          <option name="timeStamp" value="73" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

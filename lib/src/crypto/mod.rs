@@ -5,3 +5,5 @@ pub(crate) mod ecdsa;
 pub(crate) mod ecdh;
 pub mod pedersen_hash;
 pub mod utils;
+mod fiat_shamir;
+mod bayer_groth;

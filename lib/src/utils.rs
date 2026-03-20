@@ -1,4 +1,4 @@
-use crate::{crypto::pedersen_hash::hash_array, CurvePoint, FE};
+use crate::{crypto::pedersen_hash::hash_array, CurvePoint, Fe, FeScalar};
 use crypto_bigint::rand_core::{OsRng, RngCore};
 use lambdaworks_math::{
     elliptic_curve::{
@@ -19,13 +19,13 @@ use std::ops::{Add, Div, Neg};
 /// 6.6.2. Simplified Shallue-van de Woestijne-Ulas Method.
 /// There is no need to clear the cofactor, the Stark Curve have a prime order.
 /// According to the paper, it's guarantee to always return a valid point on the curve
-pub fn hash_to_stark_curve(value: FE) -> CurvePoint {
+pub fn hash_to_stark_curve(value: Fe) -> CurvePoint {
     // value generated with the Sage script from the Appendix H.1
     // with the Stark Curve parameters
 
-    let alpha: FE = StarkCurve::a();
-    let beta: FE = StarkCurve::b();
-    let z = FE::from(19);
+    let alpha: Fe = StarkCurve::a();
+    let beta: Fe = StarkCurve::b();
+    let z = Fe::from(19);
 
     let u = hash_array(&[
         value,
@@ -33,21 +33,21 @@ pub fn hash_to_stark_curve(value: FE) -> CurvePoint {
         cairo_short_string_to_fe("BlackBox").unwrap(),
     ]);
 
-    let tv1 = z.pow(FE::from(2).representative()) * u.pow(FE::from(4).representative())
+    let tv1 = z.pow(Fe::from(2).representative()) * u.pow(Fe::from(4).representative())
         + z * u
-        .pow(FE::from(2).representative())
+        .pow(Fe::from(2).representative())
         .inv()
-        .unwrap_or(FE::zero());
+        .unwrap_or(Fe::zero());
 
-    let x1 = if tv1 == FE::zero() {
+    let x1 = if tv1 == Fe::zero() {
         beta.div(z * alpha).unwrap()
     } else {
-        beta.neg().div(alpha).unwrap() * (FE::one() + tv1)
+        beta.neg().div(alpha).unwrap() * (Fe::one() + tv1)
     };
 
-    let gx1 = x1.pow(FE::from(3).representative()) + alpha * x1 + beta;
-    let x2 = z * u.pow(FE::from(2).representative()) * x1;
-    let gx2 = x2.pow(FE::from(3).representative()) + alpha * x2 + beta;
+    let gx1 = x1.pow(Fe::from(3).representative()) + alpha * x1 + beta;
+    let x2 = z * u.pow(Fe::from(2).representative()) * x1;
+    let gx2 = x2.pow(Fe::from(3).representative()) + alpha * x2 + beta;
 
     if let Some(sqrts) = gx1.sqrt() {
         let y = sqrts.0;
@@ -70,7 +70,7 @@ pub enum CairoShortStringToFEError {
     StringTooLong,
 }
 
-pub fn cairo_short_string_to_fe(str: &str) -> Result<FE, CairoShortStringToFEError> {
+pub fn cairo_short_string_to_fe(str: &str) -> Result<Fe, CairoShortStringToFEError> {
     if !str.is_ascii() {
         return Err(CairoShortStringToFEError::NonAsciiCharacter);
     }
@@ -84,10 +84,10 @@ pub fn cairo_short_string_to_fe(str: &str) -> Result<FE, CairoShortStringToFEErr
     buffer[(32 - ascii_bytes.len())..].copy_from_slice(ascii_bytes);
 
     // The conversion will never fail
-    Ok(FE::from_bytes_be(&buffer).unwrap())
+    Ok(Fe::from_bytes_be(&buffer).unwrap())
 }
 
-pub fn get_random_fe() -> FE {
+pub fn get_random_fe() -> Fe {
     const MODULUS: U256 =
         U256::from_hex_unchecked("800000000000011000000000000000000000000000000000000000000000001");
     let mut buffer = [0u8; 32];
@@ -98,12 +98,12 @@ pub fn get_random_fe() -> FE {
     let random_u256 = U256::from_bytes_be(&buffer).unwrap();
     let secret_scalar = random_u256.div_rem(&MODULUS).1;
 
-    FE::from_bytes_be(&secret_scalar.to_bytes_be()).unwrap()
+    Fe::from_bytes_be(&secret_scalar.to_bytes_be()).unwrap()
 }
 
-pub fn sample_field_elem() -> FE {
+pub fn sample_field_elem() -> Fe {
     let mut rng = ThreadRng::default();
-    FE::new(U256 {
+    Fe::new(U256 {
         limbs: [
             rng.next_u64(),
             rng.next_u64(),
@@ -113,7 +113,7 @@ pub fn sample_field_elem() -> FE {
     })
 }
 
-pub fn get_random_fe_scalar() -> FE {
+pub fn get_random_fe_scalar() -> FeScalar {
     const CURVE_ORDER: U256 =
         U256::from_hex_unchecked("800000000000010ffffffffffffffffb781126dcae7b2321e66a241adc64d2f");
     let mut buffer = [0u8; 32];
@@ -124,27 +124,27 @@ pub fn get_random_fe_scalar() -> FE {
     let random_u256 = U256::from_bytes_be(buffer.as_slice()).unwrap();
     let secret_scalar = random_u256.div_rem(&CURVE_ORDER).1;
 
-    FE::from_bytes_be(&secret_scalar.to_bytes_be()).unwrap()
+    FeScalar::from_bytes_be(&secret_scalar.to_bytes_be()).unwrap()
 }
 
-pub fn modulo(element: &FE, modulo: &FE) -> FE {
+pub fn modulo(element: &Fe, modulo: &Fe) -> Fe {
     let (_, r) = element.representative().div_rem(&modulo.representative());
-    FE::from(&r)
+    Fe::from(&r)
 }
 
-pub fn add_mod(augend: &FE, addend: &FE, modulus: &FE) -> FE {
+pub fn add_mod(augend: &Fe, addend: &Fe, modulus: &Fe) -> Fe {
     let augend = augend.to_big_uint();
     let addend = addend.to_big_uint();
     let modulus_bigint = modulus.to_big_uint();
 
     let res = augend.add(addend) % modulus_bigint;
 
-    FE::from_bytes_be(&big_uint_to_32_bytes(&res)).unwrap()
+    Fe::from_bytes_be(&big_uint_to_32_bytes(&res)).unwrap()
 }
 
-pub fn mul_mod(lhs: &FE, rhs: &FE, modulus: &FE) -> FE {
+pub fn mul_mod(lhs: &Fe, rhs: &Fe, modulus: &Fe) -> Fe {
     let res = (lhs.to_big_uint() * rhs.to_big_uint()) % modulus.to_big_uint();
-    FE::from_bytes_be(&big_uint_to_32_bytes(&res)).unwrap()
+    Fe::from_bytes_be(&big_uint_to_32_bytes(&res)).unwrap()
 }
 
 fn big_uint_to_32_bytes(n: &BigUint) -> [u8; 32] {
@@ -157,7 +157,7 @@ fn big_uint_to_32_bytes(n: &BigUint) -> [u8; 32] {
     padded
 }
 
-pub(crate) fn inv_mod(operand: &FE, modulus: &FE) -> Option<FE> {
+pub(crate) fn inv_mod(operand: &Fe, modulus: &Fe) -> Option<Fe> {
     let operand = BigInt::from_bytes_be(num_bigint::Sign::Plus, &operand.to_bytes_be());
     let modulus = BigInt::from_bytes_be(num_bigint::Sign::Plus, &modulus.to_bytes_be());
 
@@ -175,12 +175,12 @@ pub(crate) fn inv_mod(operand: &FE, modulus: &FE) -> Option<FE> {
     let mut result = [0u8; 32];
     result[(32 - buffer.len())..].copy_from_slice(&buffer[..]);
 
-    Some(FE::from_bytes_be(&result).unwrap())
+    Some(Fe::from_bytes_be(&result).unwrap())
 }
 
 /// https://en.wikipedia.org/wiki/Horner%27s_method
-pub fn polynomial_evaluation_mod(x: &FE, coefficients: &[FE], modulus: &FE) -> FE {
-    coefficients.iter().rev().fold(FE::zero(), |acc, coeff| {
+pub fn polynomial_evaluation_mod(x: &Fe, coefficients: &[Fe], modulus: &Fe) -> Fe {
+    coefficients.iter().rev().fold(Fe::zero(), |acc, coeff| {
         add_mod(&coeff, &mul_mod(&acc, x, modulus), modulus)
     })
 }
@@ -189,15 +189,15 @@ pub fn polynomial_evaluation_mod(x: &FE, coefficients: &[FE], modulus: &FE) -> F
 mod tests {
     use crate::constants::CURVE_ORDER_FE;
     use crate::utils::polynomial_evaluation_mod;
-    use crate::FE;
+    use crate::Fe;
 
     #[test]
     fn test_polynomial_evaluation_mod() {
-        let coefficients = vec![FE::from(2), FE::from(5), FE::from(6), FE::from(7)];
-        let x = FE::from(3);
+        let coefficients = vec![Fe::from(2), Fe::from(5), Fe::from(6), Fe::from(7)];
+        let x = Fe::from(3);
 
         let evaluation = polynomial_evaluation_mod(&x, &coefficients, &CURVE_ORDER_FE);
 
-        assert_eq!(evaluation, FE::from(260))
+        assert_eq!(evaluation, Fe::from(260))
     }
 }

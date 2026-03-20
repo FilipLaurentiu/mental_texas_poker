@@ -8,7 +8,7 @@ use crate::{
     },
     utils::{cairo_short_string_to_fe, get_random_fe, polynomial_evaluation_mod},
     CurvePoint,
-    FE,
+    Fe,
 };
 use chacha20poly1305::{
     aead::{rand_core::RngCore, Aead, Key, KeyInit, OsRng}, Error, XChaCha20Poly1305,
@@ -44,13 +44,13 @@ impl PedersenDKGProof {
         }
     }
 
-    pub fn commitment_hash(&self) -> FE {
+    pub fn commitment_hash(&self) -> Fe {
         hash_array(
             &self
                 .commitment
                 .iter()
                 .map(|point| PedersenStarkCurve::hash(point.to_affine().x(), point.to_affine().y()))
-                .collect::<Vec<FE>>(),
+                .collect::<Vec<Fe>>(),
         )
     }
 
@@ -58,7 +58,7 @@ impl PedersenDKGProof {
     ///
     /// - `dkg_share` - Received dkg share
     /// - `x` - evaluation point/seat number
-    pub fn verify(&self, dkg_share: FE, x: &FE) -> Result<(), VerifyDKGError> {
+    pub fn verify(&self, dkg_share: Fe, x: &Fe) -> Result<(), VerifyDKGError> {
         self.verify_pok()?;
 
         let acc = self
@@ -95,21 +95,21 @@ impl PedersenDKGProof {
 pub struct PedersenDKG {
     pub proof: PedersenDKGProof,
     // address -> share
-    pub dkg_shares: HashMap<FE, FE>,
+    pub dkg_shares: HashMap<Fe, Fe>,
 }
 
 #[derive(Debug)]
 pub enum NewPedersenDKGError {
+    InvalidPlayerKey,
     SignatureError(EcdsaError),
 }
 
 impl PedersenDKG {
     /// - `sk` - Account's secret key used to generate the Schnorr proof
     /// - `players_accounts` - Players accounts to encrypt their shares
-    pub fn new(sk: &FE, players_accounts: &Vec<&Account>) -> Result<Self, NewPedersenDKGError> {
-        let polynomial_degree = players_accounts.len() + 1;
-        let random_coefficients: Vec<FE> =
-            (0..polynomial_degree).map(|_| get_random_fe()).collect();
+    pub fn new(sk: &Fe, players_accounts: &Vec<&Account>) -> Result<Self, NewPedersenDKGError> {
+        let random_coefficients: Vec<Fe> =
+            (0..players_accounts.len()).map(|_| get_random_fe()).collect();
 
         // sign a message with the secret part of the polynomial to prove knowledge
         let secret_pok = EcdsaSignature::sign(
@@ -121,6 +121,9 @@ impl PedersenDKG {
 
         let mut dkg_shares = HashMap::new();
         for account in players_accounts.iter() {
+            if account.pk == Fe::zero() {
+                return Err(NewPedersenDKGError::InvalidPlayerKey);
+            }
             let evaluation =
                 polynomial_evaluation_mod(&account.address, &random_coefficients, &CURVE_ORDER_FE);
             dkg_shares.insert(account.address, evaluation);
@@ -175,7 +178,7 @@ impl EncryptedDKGShare {
 
 #[cfg(test)]
 mod tests {
-    use crate::{crypto::pedersen_dkg::EncryptedDKGShare, FE};
+    use crate::{crypto::pedersen_dkg::EncryptedDKGShare, Fe};
     use lambdaworks_math::{
         cyclic_group::IsGroup,
         elliptic_curve::{
@@ -186,8 +189,8 @@ mod tests {
 
     #[test]
     fn test_encryption_dkg_share() {
-        let share = FE::from(230).to_bytes_be();
-        let key = FE::from(12345678);
+        let share = Fe::from(230).to_bytes_be();
+        let key = Fe::from(12345678);
         let ecdh_key = StarkCurve::generator()
             .operate_with_self(key.representative())
             .x()

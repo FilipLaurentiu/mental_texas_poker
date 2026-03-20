@@ -1,5 +1,5 @@
 mod poker_table;
 pub mod player;
-mod deck;
-mod card;
+pub mod deck;
+pub mod card;
 mod casino;

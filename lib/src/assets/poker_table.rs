@@ -1,5 +1,6 @@
-use crate::{assets::player::Account, utils::get_random_fe, FE};
+use crate::{assets::player::Account, utils::get_random_fe, CurvePoint, Fe};
 use crypto_bigint::U256;
+use lambdaworks_math::cyclic_group::IsGroup;
 use std::collections::HashMap;
 
 #[derive(Eq, PartialEq)]
@@ -48,12 +49,12 @@ pub struct Rake {
 /// - `percent` - Values are multiples of 10. (e.g. 25 = 2.5%).
 /// - `capped` - Max value for the rake. 0 means no capped.
 pub struct RakeFee {
-    percent: FE,
+    percent: Fe,
     capped: U256,
 }
 
 pub struct PokerTable<'a> {
-    pub table_id: FE,
+    pub table_id: Fe,
     pub table_type: PokerTableType,
     pub status: PokerTableStatus,
     pub rake: Rake,
@@ -61,13 +62,14 @@ pub struct PokerTable<'a> {
     pub min_players: usize,
     pub players_accounts: Vec<&'a Account>,
     pub pending_players_accounts: Vec<&'a Account>,
-    pub players_funds: HashMap<FE, U256>,
-    pub game_id: FE,
-    pub current_deck_hash: Option<FE>,
+    pub players_funds: HashMap<Fe, U256>,
+    pub game_id: Fe,
+    game_pk: CurvePoint,
+    pub current_deck_hash: Option<Fe>,
     // address -> commitment hash
-    pub dkg_commitments: HashMap<FE, FE>,
+    pub dkg_commitments: HashMap<Fe, Fe>,
     // address to seat
-    pub player_seat: HashMap<FE, usize>,
+    pub player_seat: HashMap<Fe, usize>,
 }
 
 impl<'a> Default for PokerTable<'a> {
@@ -83,6 +85,7 @@ impl<'a> Default for PokerTable<'a> {
             pending_players_accounts: vec![],
             players_funds: Default::default(),
             game_id: Default::default(),
+            game_pk: CurvePoint::neutral_element(),
             current_deck_hash: None,
             dkg_commitments: Default::default(),
             players_accounts: vec![],
@@ -129,6 +132,7 @@ impl<'a> PokerTable<'a> {
     pub fn add_player(
         &mut self,
         account: &'a Account,
+        player_game_key: &CurvePoint,
         buy_in: U256,
         seat: Option<usize>,
     ) -> Result<usize, NewPlayerError> {
@@ -150,7 +154,7 @@ impl<'a> PokerTable<'a> {
                     return Err(NewPlayerError::AlreadyRegistered);
                 }
 
-                self.register_player(account, buy_in, seat);
+                self.register_player(account, player_game_key, buy_in, seat);
 
                 // game could start if enough players are in the waiting queue
                 if self.pending_players_accounts.len() == self.min_players {
@@ -168,7 +172,7 @@ impl<'a> PokerTable<'a> {
                     return Err(NewPlayerError::AlreadyRegistered);
                 }
 
-                self.register_player(account, buy_in, seat);
+                self.register_player(account, player_game_key, buy_in, seat);
 
                 let table_position =
                     self.pending_players_accounts.len() + self.players_accounts.len();
@@ -178,10 +182,18 @@ impl<'a> PokerTable<'a> {
             PokerTableStatus::Full => Err(NewPlayerError::FullTable),
         }
     }
-    fn register_player(&mut self, account: &'a Account, buy_in: U256, seat: Option<usize>) {
+    fn register_player(
+        &mut self,
+        account: &'a Account,
+        player_game_key: &CurvePoint,
+        buy_in: U256,
+        seat: Option<usize>,
+    ) {
         let account_address = account.address.clone();
         self.pending_players_accounts.push(account);
         self.players_funds.insert(account_address, buy_in);
+
+        self.game_pk = self.game_pk.operate_with(player_game_key);
 
         if let Some(_seat_preference) = seat {
             todo!()
@@ -198,7 +210,7 @@ impl<'a> PokerTable<'a> {
     /// Register DKG commitment.
     pub fn register_dkg_commitment(
         &mut self,
-        dkg_commitment_hash: &FE,
+        dkg_commitment_hash: &Fe,
         sender: &Account,
     ) -> Result<(), RegisterDKGCommitmentError> {
         if self.status != PokerTableStatus::Playing(PokerTableStatusPlaying::PedersenDKGStarted) {
@@ -227,7 +239,7 @@ impl<'a> PokerTable<'a> {
     }
 
     /// Get player seat at the table from their address.
-    pub fn get_player_seat(&self, address: &FE) -> Option<&usize> {
+    pub fn get_player_seat(&self, address: &Fe) -> Option<&usize> {
         self.player_seat.get(address)
     }
 
@@ -249,5 +261,28 @@ impl<'a> PokerTable<'a> {
         self.status = PokerTableStatus::Playing(PokerTableStatusPlaying::PedersenDKGStarted);
     }
 
-    fn transfer_from(&self, address: &FE, buy_in: U256) {}
+
+    /// Get game public key.
+    /// Only if the game started.
+    pub fn game_pk(&self) -> Option<&CurvePoint> {
+        if self.status != PokerTableStatus::Waiting {
+            Some(&self.game_pk)
+        } else {
+            None
+        }
+    }
+
+    pub fn flop() {
+        unimplemented!()
+    }
+
+    pub fn turn() {
+        unimplemented!()
+    }
+
+    pub fn river() {
+        unimplemented!()
+    }
+
+    fn transfer_from(&self, address: &Fe, buy_in: U256) {}
 }

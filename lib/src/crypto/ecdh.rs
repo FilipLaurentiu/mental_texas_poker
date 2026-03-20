@@ -1,4 +1,4 @@
-use crate::{crypto::utils::new_ec_from_x, FE};
+use crate::{crypto::utils::new_ec_from_x, Fe};
 use lambdaworks_math::cyclic_group::IsGroup;
 
 #[derive(Debug)]
@@ -9,7 +9,7 @@ pub enum EcdhSecretError {
 /// Compute Diffie-Hellman secret key from the secret key and the other player public key.
 /// - `sk` - Secret key
 /// - `pk_x` - Public key x coordinate
-pub fn ecdh_key(sk: &FE, pk_x: &FE) -> Result<FE, EcdhSecretError> {
+pub fn ecdh_key(sk: &Fe, pk_x: &Fe) -> Result<Fe, EcdhSecretError> {
     let player_pub_key = new_ec_from_x(pk_x).ok_or(EcdhSecretError::InvalidCurvePoint)?;
     let secret = player_pub_key.operate_with_self(sk.representative());
     Ok(*secret.to_affine().x())

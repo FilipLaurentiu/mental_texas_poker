@@ -1,7 +1,7 @@
 use crate::{
     constants::CURVE_ORDER_FE, utils::{add_mod, get_random_fe_scalar, inv_mod, mul_mod},
     CurvePoint,
-    FE,
+    Fe,
 };
 use lambdaworks_math::{
     cyclic_group::IsGroup,
@@ -16,9 +16,9 @@ use lambdaworks_math::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EcdsaSignature {
     /// The x-coordinate of the random point R = k*G (mod n)
-    pub r: FE,
+    pub r: Fe,
     /// The signature proof s = k^(-1) * (z + r*d) (mod n)
-    pub s: FE,
+    pub s: Fe,
 }
 
 /// Errors that can occur during ECDSA operations
@@ -64,11 +64,11 @@ impl EcdsaSignature {
     /// Create a new signature from r and s values.
     ///
     /// Returns an error if r or s is zero.
-    pub fn new(r: &FE, s: &FE) -> Result<Self, EcdsaError> {
-        if *r == FE::zero() {
+    pub fn new(r: &Fe, s: &Fe) -> Result<Self, EcdsaError> {
+        if *r == Fe::zero() {
             return Err(EcdsaError::InvalidRValue);
         }
-        if *s == FE::zero() {
+        if *s == Fe::zero() {
             return Err(EcdsaError::InvalidSValue);
         }
         Ok(Self { r: *r, s: *s })
@@ -87,8 +87,8 @@ impl EcdsaSignature {
 
     /// Deserialize a signature from bytes.
     pub fn from_bytes(bytes: &[u8; 64]) -> Result<Self, EcdsaError> {
-        let r = FE::from_bytes_be(&bytes[..32]).map_err(|_| EcdsaError::InvalidRValue)?;
-        let s = FE::from_bytes_be(&bytes[32..]).map_err(|_| EcdsaError::InvalidSValue)?;
+        let r = Fe::from_bytes_be(&bytes[..32]).map_err(|_| EcdsaError::InvalidRValue)?;
+        let s = Fe::from_bytes_be(&bytes[32..]).map_err(|_| EcdsaError::InvalidSValue)?;
         Self::new(&r, &s)
     }
 
@@ -109,8 +109,8 @@ impl EcdsaSignature {
     /// A signature (r, s) or an error if the inputs are invalid.
     pub fn sign(
         message_hash: &[u8; 32],
-        private_key: &FE,
-        nonce: Option<&FE>,
+        private_key: &Fe,
+        nonce: Option<&Fe>,
     ) -> Result<Self, EcdsaError> {
         // Validate nonce is not zero
         let nonce = if nonce.is_some() {
@@ -119,7 +119,7 @@ impl EcdsaSignature {
             &get_random_fe_scalar()
         };
 
-        if *nonce == FE::zero() {
+        if *nonce == Fe::zero() {
             return Err(EcdsaError::InvalidNonce);
         }
 
@@ -131,14 +131,14 @@ impl EcdsaSignature {
         // r = R.x mod n
         // Convert x coordinate from base field to scalar field
         let r_x_bytes = r_affine.x().to_bytes_be();
-        let r = FE::from_bytes_be(&r_x_bytes).map_err(|_| EcdsaError::InvalidRValue)?;
+        let r = Fe::from_bytes_be(&r_x_bytes).map_err(|_| EcdsaError::InvalidRValue)?;
 
-        if r == FE::zero() {
+        if r == Fe::zero() {
             return Err(EcdsaError::InvalidRValue);
         }
 
         // z = message_hash as scalar field element
-        let z = FE::from_bytes_be(message_hash).map_err(|_| EcdsaError::InvalidMessageHash)?;
+        let z = Fe::from_bytes_be(message_hash).map_err(|_| EcdsaError::InvalidMessageHash)?;
 
         let k_inv = inv_mod(nonce, &CURVE_ORDER_FE).ok_or_else(|| EcdsaError::InverseError)?;
 
@@ -147,7 +147,7 @@ impl EcdsaSignature {
         let temp = add_mod(&z, &rd, &CURVE_ORDER_FE);
         let mut s = mul_mod(&k_inv, &temp, &CURVE_ORDER_FE);
 
-        if s == FE::zero() {
+        if s == Fe::zero() {
             return Err(EcdsaError::InvalidSValue);
         }
 
@@ -165,10 +165,10 @@ impl EcdsaSignature {
         public_key: &CurvePoint,
     ) -> Result<(), EcdsaError> {
         // Validate r and s are non-zero (they're already reduced mod n by FieldElement)
-        if self.r == FE::zero() {
+        if self.r == Fe::zero() {
             return Err(EcdsaError::InvalidRValue);
         }
-        if self.s == FE::zero() {
+        if self.s == Fe::zero() {
             return Err(EcdsaError::InvalidSValue);
         }
 
@@ -188,7 +188,7 @@ impl EcdsaSignature {
         }
 
         // z = message_hash as scalar field element
-        let z = FE::from_bytes_be(message_hash).map_err(|_| EcdsaError::InvalidMessageHash)?;
+        let z = Fe::from_bytes_be(message_hash).map_err(|_| EcdsaError::InvalidMessageHash)?;
 
         // s_inv = s^(-1) mod n
         let s_inv = inv_mod(&self.s, &CURVE_ORDER_FE).ok_or_else(|| EcdsaError::InverseError)?;
@@ -215,7 +215,7 @@ impl EcdsaSignature {
         // r' = R'.x mod n
         let r_prime_x_bytes = r_prime_affine.x().to_bytes_be();
         let r_prime_scalar =
-            FE::from_bytes_be(&r_prime_x_bytes).map_err(|_| EcdsaError::VerificationFailed)?;
+            Fe::from_bytes_be(&r_prime_x_bytes).map_err(|_| EcdsaError::VerificationFailed)?;
 
         // Verify r == r'
         if self.r == r_prime_scalar {
@@ -228,7 +228,7 @@ impl EcdsaSignature {
 
 #[cfg(test)]
 mod tests {
-    use crate::{crypto::ecdsa::EcdsaSignature, utils::get_random_fe_scalar, FE};
+    use crate::{crypto::ecdsa::EcdsaSignature, utils::get_random_fe_scalar, Fe};
     use lambdaworks_crypto::hash::pedersen::{Pedersen, PedersenStarkCurve};
     use lambdaworks_math::{
         cyclic_group::IsGroup,
@@ -244,7 +244,7 @@ mod tests {
         let nonce = get_random_fe_scalar();
 
         /// message
-        let message = PedersenStarkCurve::hash(&FE::from(20), &FE::from(30));
+        let message = PedersenStarkCurve::hash(&Fe::from(20), &Fe::from(30));
 
         let signature =
             EcdsaSignature::sign(&message.to_bytes_be(), &private_key, Some(&nonce)).unwrap();

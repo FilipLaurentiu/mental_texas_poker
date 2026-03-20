@@ -1080,6 +1080,7 @@ dependencies = [
  "num-integer",
  "num-traits",
  "rand 0.10.0",
+    "rand_core 0.6.4",
  "starknet",
  "starknet-crypto",
  "starknet-curve",

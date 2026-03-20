@@ -1,7 +1,7 @@
 use crate::{
     constants::CURVE_ORDER_FE,
     utils::{add_mod, get_random_fe_scalar, mul_mod},
-    FE,
+    Fe,
 };
 use crypto_bigint::rand_core::RngCore;
 use lambdaworks_crypto::hash::pedersen::{Pedersen, PedersenStarkCurve};
@@ -23,12 +23,12 @@ use std::{
 /// - `message` - Signed message
 /// - `signature` - Compressed signature (Rx - compressed, s)
 pub struct SchnorrProof {
-    message: FE,
-    signature: (FE, FE),
+    message: Fe,
+    signature: (Fe, Fe),
 }
 
 impl SchnorrProof {
-    pub fn sign_message(private_key: &FE, message: &FE) -> Self {
+    pub fn sign_message(private_key: &Fe, message: &Fe) -> Self {
         let g = StarkCurve::generator();
         // Choose a random k field element. This element should be different in each signature.
         let k = get_random_fe_scalar();
@@ -54,7 +54,7 @@ impl SchnorrProof {
         }
     }
 
-    pub fn verify_signature(&self, pk: &FE) -> bool {
+    pub fn verify_signature(&self, pk: &Fe) -> bool {
         let g = StarkCurve::generator();
         let (r, s) = &self.signature;
 
@@ -77,7 +77,7 @@ impl SchnorrProof {
 
 #[cfg(test)]
 mod tests {
-    use crate::{crypto::schnorr_proof::SchnorrProof, utils::get_random_fe_scalar, FE};
+    use crate::{crypto::schnorr_proof::SchnorrProof, utils::get_random_fe_scalar, Fe};
     use lambdaworks_math::{
         cyclic_group::IsGroup,
         elliptic_curve::{
@@ -89,7 +89,7 @@ mod tests {
     fn test_proof() {
         let secret_key = get_random_fe_scalar();
 
-        let message = FE::from(10);
+        let message = Fe::from(10);
         let proof = SchnorrProof::sign_message(&secret_key, &message);
 
         let pub_key = StarkCurve::generator()

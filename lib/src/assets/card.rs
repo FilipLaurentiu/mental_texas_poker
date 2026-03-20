@@ -1,3 +1,5 @@
+use crate::CurvePoint;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Suit {
     Clubs,
@@ -30,7 +32,7 @@ pub struct Card {
 }
 
 impl Card {
-    fn card_from_index(n: u8) -> Option<Card> {
+    pub fn from_index(n: u8) -> Option<Card> {
         if n >= 52 {
             return None;
         }
@@ -93,6 +95,12 @@ impl std::fmt::Display for Card {
     }
 }
 
+
+pub struct EncryptedCard {
+    pub c1: CurvePoint,
+    pub c2: CurvePoint,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::assets::card::{Card, Rank, Suit};
@@ -100,14 +108,14 @@ mod tests {
     #[test]
     fn test_card_from_index() {
         for i in 0..52u8 {
-            assert!(Card::card_from_index(i).is_some());
+            assert!(Card::from_index(i).is_some());
         }
 
-        let ace_spades = Card::card_from_index(51).unwrap();
+        let ace_spades = Card::from_index(51).unwrap();
         assert_eq!(ace_spades.rank, Rank::Ace);
         assert_eq!(ace_spades.suit, Suit::Spades);
 
-        let two = Card::card_from_index(0).unwrap();
+        let two = Card::from_index(0).unwrap();
         assert_eq!(two.rank, Rank::Two);
         assert_eq!(two.suit, Suit::Clubs);
     }

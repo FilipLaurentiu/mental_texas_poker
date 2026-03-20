@@ -1,4 +1,4 @@
-use crate::{CurvePoint, FE};
+use crate::{CurvePoint, Fe};
 use lambdaworks_math::{
     cyclic_group::IsGroup,
     elliptic_curve::{
@@ -8,14 +8,15 @@ use lambdaworks_math::{
     },
 };
 
-pub fn new_ec_from_x(x: &FE) -> Option<CurvePoint> {
-    let rhs = x * x * x + StarkCurve::a() * x + StarkCurve::b();
+pub fn new_ec_from_x(x: &Fe) -> Option<CurvePoint> {
+    let rhs = x * x * x + x + StarkCurve::b();
+    println!("rhs {}", rhs);
     let (root1, _root2) = rhs.sqrt()?;
 
     Some(CurvePoint::from_affine(*x, root1).unwrap())
 }
 
-pub fn ec_array_commitment(elements: &[FE]) -> Vec<CurvePoint> {
+pub fn ec_array_commitment(elements: &[Fe]) -> Vec<CurvePoint> {
     let g = StarkCurve::generator();
     elements
         .iter()
@@ -27,7 +28,7 @@ pub fn ec_array_commitment(elements: &[FE]) -> Vec<CurvePoint> {
 mod tests {
     use crate::{
         constants::CURVE_ORDER_FE, crypto::utils::ec_array_commitment, crypto::utils::new_ec_from_x, utils::polynomial_evaluation_mod,
-        CurvePoint, FE,
+        CurvePoint, Fe,
     };
     use lambdaworks_math::{
         cyclic_group::IsGroup,
@@ -38,7 +39,7 @@ mod tests {
 
     #[test]
     fn test_recover_from_x() {
-        let sk = FE::from(20);
+        let sk = Fe::from(20);
         let pk = StarkCurve::generator().operate_with_self(sk.representative());
 
         let x = pk.to_affine().x().clone();
@@ -48,10 +49,10 @@ mod tests {
 
     #[test]
     fn test_ec_array_commitment() {
-        let coefficients = vec![FE::from(10), FE::from(20), FE::from(30), FE::from(40)];
+        let coefficients = vec![Fe::from(10), Fe::from(20), Fe::from(30), Fe::from(40)];
         let commitments = ec_array_commitment(&coefficients);
 
-        let x = FE::from(5);
+        let x = Fe::from(5);
 
         let evaluation = polynomial_evaluation_mod(&x, &coefficients, &CURVE_ORDER_FE);
 
