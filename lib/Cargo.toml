@@ -9,7 +9,6 @@ starknet-crypto = "0.8.1"
 starknet-curve = "0.6.0"
 starknet-types-core = { version = "1.0.0", features = ["secret-felt", "hash"] }
 rand = "0.10.0"
-rand_core = { version = "0.10.0", features = ["getrandom"] }
 crypto-bigint = "0.6.1"
 num-bigint = { version = "0.4.6", features = ["rand"] }
 lambdaworks-math = { version = "0.13.0", features = ["lambdaworks-serde-binary", "lambdaworks-serde-string"] }
