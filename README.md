@@ -1,3 +1,5 @@
+### Decentralized P2P Texas Poker
+
 ## Introduction
 
 For many years Mental Poker remained an unsolved cryptography puzzle. There are multiple solutions for the Poker game
