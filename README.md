@@ -1,4 +1,4 @@
-### Decentralized P2P Texas Poker
+### Decentralized Drop-tolerant P2P Texas Poker
 
 ## Introduction
 
