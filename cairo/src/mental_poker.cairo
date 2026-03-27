@@ -3,18 +3,24 @@ mod MentalPoker {
     use cairo_mental_poker::interfaces::IMentalPoker;
     use core::hash::{HashStateExTrait, HashStateTrait};
     use core::poseidon::{PoseidonTrait, poseidon_hash_span};
+    use openzeppelin::interfaces::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
     use starknet::storage::{
         Map, Mutable, MutableVecTrait, StorageMapReadAccess, StoragePath, StoragePathEntry,
         StoragePointerReadAccess, StoragePointerWriteAccess, Vec,
     };
-    use starknet::{ContractAddress, get_caller_address, get_contract_address, get_tx_info};
+    use starknet::{
+        ContractAddress, contract_address_const, get_caller_address, get_contract_address,
+        get_tx_info,
+    };
     use crate::table::{
-        PokerTable, PokerTableStatus, PokerTableStatusPlaying, PokerTableType, RakeType,
+        PokerTable, PokerTableImpl, PokerTableStatus, PokerTableStatusPlaying, PokerTableTrait,
+        PokerTableType, RakeType,
     };
 
     #[storage]
     struct Storage {
         poker_tables: Map<felt252, PokerTable>,
+        token_address: ContractAddress,
     }
 
     pub mod Errors {
@@ -25,8 +31,22 @@ mod MentalPoker {
         pub const INVALID_TABLE: felt252 = 'Invalid table id';
     }
 
+
+    #[constructor]
+    fn constructor(ref self: ContractState, token_address: ContractAddress) {
+        self.token_address.write(token_address);
+    }
+
     #[abi(embed_v0)]
     impl MentalPokerImpl of IMentalPoker<ContractState> {
+        fn get_table_status(self: @ContractState, table_id: felt252) -> PokerTableStatus {
+            self.poker_tables.entry(table_id).status.read()
+        }
+        fn get_table_type(self: @ContractState, table_id: felt252) -> PokerTableType {
+            self.poker_tables.entry(table_id).table_type.read()
+        }
+
+
         fn new_table(
             ref self: ContractState,
             table_type: PokerTableType,
@@ -34,7 +54,7 @@ mod MentalPoker {
             min_players: u64,
             rake: RakeType,
         ) {
-            let table_id = generate_table_id();
+            let table_id = generate_new_table_id();
 
             let poker_table = self.poker_tables.entry(table_id);
             assert(
@@ -50,11 +70,7 @@ mod MentalPoker {
         }
 
         fn join_table(
-            ref self: ContractState,
-            table_id: felt252,
-            game_key: felt252,
-            buy_in: u256,
-            seat: Option<usize>,
+            ref self: ContractState, table_id: felt252, buy_in: u256, seat: Option<usize>,
         ) -> Result<u64, felt252> {
             let caller = get_caller_address();
 
@@ -80,14 +96,11 @@ mod MentalPoker {
                         return Err(Errors::ALREADY_REGISTERED);
                     }
 
-                    self.register_player(caller, game_key, buy_in, seat);
+                    self.register_player(table_id, buy_in, seat);
 
                     // game could start if enough players are in the waiting queue
                     if poker_table.pending_players.len() == poker_table.min_players.read() {
-                        poker_table
-                            .status
-                            .write(PokerTableStatus::Playing(PokerTableStatusPlaying::Playing));
-                        self.start_game();
+                        self.start_game(table_id);
                     }
 
                     Result::Ok(poker_table.active_players.len())
@@ -102,7 +115,7 @@ mod MentalPoker {
                         return Err(Errors::ALREADY_REGISTERED);
                     }
 
-                    self.register_player(caller, game_key, buy_in, seat);
+                    self.register_player(table_id, buy_in, seat);
 
                     let table_position = poker_table.pending_players.len()
                         + poker_table.active_players.len();
@@ -112,25 +125,37 @@ mod MentalPoker {
             }
         }
 
-
-        fn get_table_status(self: @ContractState, table_id: felt252) -> PokerTableStatus {
-            self.poker_tables.entry(table_id).status.read()
-        }
-        fn get_table_type(self: @ContractState, table_id: felt252) -> PokerTableType {
-            self.poker_tables.entry(table_id).table_type.read()
-        }
+        fn flop(ref self: ContractState, table_id: felt252) {}
+        fn turn(ref self: ContractState, table_id: felt252) {}
+        fn river(ref self: ContractState, table_id: felt252) {}
     }
 
 
     #[generate_trait]
     impl MentalPokerInternalImpl of MentalPokerInternalTrait {
         fn register_player(
-            ref self: ContractState,
-            account: ContractAddress,
-            game_key: felt252,
-            buy_in: u256,
-            seat: Option<usize>,
-        ) {}
+            ref self: ContractState, table_id: felt252, buy_in: u256, seat: Option<usize>,
+        ) {
+            let caller = get_caller_address();
+            let poker_table = self.poker_tables.entry(table_id);
+            poker_table.pending_players.push(caller);
+            poker_table.players_funds.entry(caller).write(buy_in);
+
+            if let Some(_seat_preference) = seat { // TODO
+            } else {
+                let next_available_seat = poker_table.active_players.len()
+                    + poker_table.pending_players.len();
+
+                poker_table.player_seat.entry(caller).write(next_available_seat);
+            }
+
+            let token = ERC20ABIDispatcher { contract_address: self.token_address.read() };
+            let this = get_contract_address();
+
+            token.transfer_from(caller, this, buy_in);
+        }
+
+
         fn is_full(ref self: ContractState, table_id: felt252) -> core::bool {
             self.poker_tables.entry(table_id).pending_players.len()
                 + self
@@ -172,12 +197,24 @@ mod MentalPoker {
             false
         }
 
-        fn start_game(ref self: ContractState) {}
+        fn start_game(ref self: ContractState, table_id: felt252) {
+            let poker_table = self.poker_tables.entry(table_id);
+
+            for i in 0..poker_table.min_players.read() {
+                let pending_player_mem_slot = poker_table.pending_players.at(i);
+                poker_table.active_players.at(i).write(pending_player_mem_slot.read());
+                pending_player_mem_slot.write(contract_address_const::<0>());
+            }
+
+            poker_table
+                .status
+                .write(PokerTableStatus::Playing(PokerTableStatusPlaying::DealingCards))
+        }
     }
 
 
     /// generate unique table id
-    fn generate_table_id() -> felt252 {
+    fn generate_new_table_id() -> felt252 {
         let caller = get_caller_address();
         let tx_info = get_tx_info();
 

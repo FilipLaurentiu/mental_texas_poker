@@ -34,7 +34,7 @@ pub enum PokerTableStatus {
 #[derive(starknet::Store, Drop, Serde, PartialEq)]
 pub enum PokerTableStatusPlaying {
     #[default]
-    Playing,
+    DealingCards,
 }
 
 
@@ -70,7 +70,8 @@ pub struct PokerTable {
     pub game_id: felt252,
     pub dealer_index: usize,
     pub players_funds: Map<ContractAddress, u256>,
-    pub player_seat: Map<ContractAddress, usize>,
+    pub player_seat: Map<ContractAddress, u64>,
     pub active_players: Vec<ContractAddress>,
     pub pending_players: Vec<ContractAddress>,
+    pub token: ContractAddress
 }
