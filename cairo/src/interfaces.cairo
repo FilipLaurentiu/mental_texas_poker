@@ -6,6 +6,8 @@ pub trait IMentalPoker<TContractState> {
     fn get_table_status(self: @TContractState, table_id: felt252) -> PokerTableStatus;
     fn get_table_type(self: @TContractState, table_id: felt252) -> PokerTableType;
 
+    fn is_full(self: @TContractState, table_id: felt252) -> bool;
+
     /// Create new poker table.
     fn new_table(
         ref self: TContractState,
