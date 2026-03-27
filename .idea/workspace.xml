@@ -15,9 +15,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="be82783f-a435-4be5-abef-eeb12c876134" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/lib/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cairo/Scarb.lock" beforeDir="false" afterPath="$PROJECT_DIR$/cairo/Scarb.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cairo/Scarb.toml" beforeDir="false" afterPath="$PROJECT_DIR$/cairo/Scarb.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cairo/src/mental_poker.cairo" beforeDir="false" afterPath="$PROJECT_DIR$/cairo/src/mental_poker.cairo" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cairo/src/table.cairo" beforeDir="false" afterPath="$PROJECT_DIR$/cairo/src/table.cairo" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/crypto/schnorr_proof.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/crypto/schnorr_proof.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -98,7 +102,7 @@
     &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
     &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
     &quot;org.rust.disableDetachedFileInspection/home/filip/Work/mental_texas_poker/lib/src/crypto/bayer-groth/lib.rs&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.intentionPowerPack&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
 }</component>
@@ -245,7 +249,11 @@
       <workItem from="1773073759082" duration="824000" />
       <workItem from="1774017422433" duration="362000" />
       <workItem from="1774017803393" duration="3179000" />
-      <workItem from="1774026418158" duration="31000" />
+      <workItem from="1774026418158" duration="1391000" />
+      <workItem from="1774175422554" duration="214000" />
+      <workItem from="1774528765638" duration="6253000" />
+      <workItem from="1774595796448" duration="1448000" />
+      <workItem from="1774615842127" duration="2425000" />
     </task>
     <task id="LOCAL-00002" summary="Use lambdaworks types">
       <option name="closed" value="true" />
@@ -303,13 +311,48 @@
       <option name="project" value="LOCAL" />
       <updated>1774020976731</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Remove unused dependency">
+      <option name="closed" value="true" />
+      <created>1774026478988</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1774026478988</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Add README.md">
+      <option name="closed" value="true" />
+      <created>1774026486446</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1774026486447</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Add license">
+      <option name="closed" value="true" />
+      <created>1774175579361</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1774175579361</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Change README.md">
+      <option name="closed" value="true" />
+      <created>1774175628218</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1774175628218</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
+    <ignored-roots>
+      <path value="$PROJECT_DIR$/cairo" />
+    </ignored-roots>
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
     <MESSAGE value="Update pedersen_dkg.rs" />
     <MESSAGE value="Use lambdaworks types" />
@@ -317,7 +360,11 @@
     <MESSAGE value="fix `receive_dkg_share` function" />
     <MESSAGE value="Minor improvements" />
     <MESSAGE value="Add bayer_groth shuffle-prove alg.&#10;&#10;In progress" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add bayer_groth shuffle-prove alg.&#10;&#10;In progress" />
+    <MESSAGE value="Remove unused dependency" />
+    <MESSAGE value="Add README.md" />
+    <MESSAGE value="Add license" />
+    <MESSAGE value="Change README.md" />
+    <option name="LAST_COMMIT_MESSAGE" value="Change README.md" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

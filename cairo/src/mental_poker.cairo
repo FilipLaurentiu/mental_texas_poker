@@ -1,21 +1,18 @@
 #[starknet::contract]
 mod MentalPoker {
-    use cairo_mental_poker::interfaces::IMentalPoker;
-    use core::hash::{HashStateExTrait, HashStateTrait};
-    use core::poseidon::{PoseidonTrait, poseidon_hash_span};
-    use openzeppelin::interfaces::account::accounts::AccountABIDispatcher;
+    use core::poseidon::poseidon_hash_span;
     use openzeppelin::interfaces::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
     use starknet::storage::{
-        Map, Mutable, MutableVecTrait, StorageMapReadAccess, StoragePath, StoragePathEntry,
-        StoragePointerReadAccess, StoragePointerWriteAccess, Vec, VecTrait,
+        Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+        VecTrait,
     };
-    use starknet::{
-        ContractAddress, get_caller_address, get_contract_address, get_execution_info, get_tx_info,
-    };
+    use starknet::{ContractAddress, get_caller_address, get_contract_address, get_execution_info};
+    use crate::interfaces::IMentalPoker;
     use crate::table::{
         PokerTable, PokerTableDefault, PokerTableImpl, PokerTablePlayersInfo, PokerTableStatus,
         PokerTableStatusPlaying, PokerTableTrait, PokerTableType, RakeType,
     };
+
 
     #[storage]
     struct Storage {
@@ -23,6 +20,32 @@ mod MentalPoker {
         poker_table_players: Map<felt252, PokerTablePlayersInfo>,
         token_address: ContractAddress,
         poker_tables_count: felt252,
+    }
+
+
+    #[event]
+    #[derive(starknet::Event, Drop)]
+    enum Event {
+        NewTable: NewTable,
+        PlayerJoinedTable: PlayerJoinedTable,
+    }
+
+
+    #[derive(starknet::Event, Drop)]
+    struct NewTable {
+        table_id: felt252,
+        table_type: PokerTableType,
+    }
+
+
+    #[derive(starknet::Event, Drop)]
+    struct PlayerJoinedTable {
+        #[key]
+        table_id: felt252,
+        #[key]
+        player: ContractAddress,
+        buy_in: u256,
+        seat: u64,
     }
 
     pub mod Errors {
@@ -84,6 +107,8 @@ mod MentalPoker {
 
             self.poker_tables.entry(table_id).write(poker_table);
             self.poker_tables_count.write(self.poker_tables_count.read() + 1);
+
+            self.emit(NewTable { table_id, table_type });
         }
 
         fn join_table(
@@ -122,7 +147,11 @@ mod MentalPoker {
                         self.start_game(table_id);
                     }
 
-                    Result::Ok(poker_table_players.active_players.len())
+                    let seat = poker_table_players.active_players.len();
+
+                    self.emit(PlayerJoinedTable { table_id, player: caller, buy_in, seat });
+
+                    Result::Ok(seat)
                 },
                 PokerTableStatus::Playing(_) => {
                     if self.is_full(table_id) {
@@ -136,10 +165,11 @@ mod MentalPoker {
 
                     self.register_player(table_id, buy_in, seat);
 
-                    let table_position = poker_table_players.pending_players.len()
+                    let seat = poker_table_players.pending_players.len()
                         + poker_table_players.active_players.len();
 
-                    Result::Ok(table_position)
+                    self.emit(PlayerJoinedTable { table_id, player: caller, buy_in, seat });
+                    Result::Ok(seat)
                 },
             }
         }

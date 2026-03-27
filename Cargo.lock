@@ -1075,7 +1075,7 @@ dependencies = [
  "crypto-bigint 0.6.1",
  "lambdaworks-crypto",
  "lambdaworks-math",
-    "log",
+ "log",
  "num-bigint",
  "num-integer",
  "num-traits",

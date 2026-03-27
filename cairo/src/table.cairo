@@ -1,8 +1,7 @@
-use bool::True;
 use starknet::ContractAddress;
-use starknet::storage::{Map, MutableVecTrait, Vec};
+use starknet::storage::{Map, Vec};
 
-#[derive(starknet::Store, Drop, Serde, Default)]
+#[derive(starknet::Store, Copy, Drop, Serde, Default)]
 #[allow(starknet::store_no_default_variant)]
 pub enum PokerTableType {
     #[default]
@@ -10,7 +9,7 @@ pub enum PokerTableType {
     Tournament: TournamentPokerTableType,
 }
 
-#[derive(starknet::Store, Drop, Serde, Default)]
+#[derive(starknet::Store, Copy, Drop, Serde, Default)]
 pub struct BuyInPokerTableType {
     pub buy_in: u256,
 }
@@ -18,7 +17,7 @@ pub struct BuyInPokerTableType {
 /// Tournament Poker Table Type
 ///
 /// - `entry_fee` - Fee charged for tournament registration. Entry fee includes buy-in.
-#[derive(starknet::Store, Drop, Serde)]
+#[derive(starknet::Store, Copy, Drop, Serde)]
 pub struct TournamentPokerTableType {
     pub entry_fee: u256,
 }

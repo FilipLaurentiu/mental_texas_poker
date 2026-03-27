@@ -1,4 +1,4 @@
-use crate::table::{PokerTable, PokerTableStatus, PokerTableType, RakeType};
+use crate::table::{PokerTableStatus, PokerTableType, RakeType};
 
 #[starknet::interface]
 pub trait IMentalPoker<TContractState> {
@@ -19,10 +19,7 @@ pub trait IMentalPoker<TContractState> {
 
 
     fn join_table(
-        ref self: TContractState,
-        table_id: felt252,
-        buy_in: u256,
-        seat: Option<usize>,
+        ref self: TContractState, table_id: felt252, buy_in: u256, seat: Option<usize>,
     ) -> Result<u64, felt252>;
 
 
