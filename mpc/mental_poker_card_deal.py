@@ -1,4 +1,5 @@
 from Compiler import program
+from Compiler.library import print_ln
 from Compiler.util import bit_and, bit_xor
 
 community_cards_availability = int(program.args[1])
@@ -27,4 +28,7 @@ def remove_unavailable_cards(i):
 
 cards_availability_arr = sint.Array([i for i, val in enumerate(
     community_cards_availability.bit_decompose(52)) if val == 1])
-cards_availability_arr[players_randomness % len(cards_availability_arr)]
+next_community_card = cards_availability_arr[players_randomness % len(
+    cards_availability_arr)]
+
+print_ln('Next community card %s', next_community_card.reveal())
