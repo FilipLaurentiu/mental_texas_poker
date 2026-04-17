@@ -14,7 +14,6 @@
 #include "secure_type/secure_unsigned_integer.h"
 
 namespace program_options = boost::program_options;
-
 namespace mo = encrypto::motion;
 
 bool CheckPartyArgumentSyntax(const std::string &party_argument);
@@ -23,8 +22,8 @@ std::pair<program_options::variables_map, bool> ParseProgramOptions(int ac, char
 
 mo::PartyPointer CreateParty(const program_options::variables_map &user_options);
 
-int EvaluateProtocol(const mo::PartyPointer &party, uint64_t my_cards, uint32_t my_randomness,
-                     uint64_t community_cards);
+unsigned long int EvaluateProtocol(const mo::PartyPointer &party, uint64_t my_cards, uint64_t my_randomness,
+                                   uint64_t community_cards);
 
 
 int main(int ac, char *av[]) {
@@ -35,54 +34,54 @@ int main(int ac, char *av[]) {
     mo::PartyPointer party = CreateParty(user_options);
 
     const uint64_t my_cards = user_options["my-cards"].as<std::uint64_t>();
-    const uint32_t my_randomness = user_options["my-cards"].as<std::uint32_t>();
+    const uint64_t my_randomness = user_options["my-randomness"].as<std::uint64_t>();
     const uint64_t community_cards = user_options["community-cards"].as<std::uint64_t>();
 
     const uint64_t new_community_card = EvaluateProtocol(party, my_cards, my_randomness, community_cards);
 
-    std::cout << "Next community cards is " << new_community_card;
+    std::cout << "Next community cards is " << new_community_card << std::endl;
     return EXIT_SUCCESS;
 }
 
-int EvaluateProtocol(const mo::PartyPointer &party, const uint64_t my_cards, const uint32_t my_randomness,
-                     uint64_t community_cards) {
-    const std::size_t number_of_parties{party->GetConfiguration()->GetNumOfParties()};
+unsigned long int EvaluateProtocol(const mo::PartyPointer &party, const uint64_t my_cards, const uint64_t my_randomness,
+                                   uint64_t community_cards) {
+    const std::size_t number_of_parties = party->GetConfiguration()->GetNumOfParties();
 
-    std::vector<mo::SecureUnsignedInteger> players_cards(number_of_parties), players_randomness(number_of_parties),
-            players_community_cards(number_of_parties);
+
+    std::vector<mo::SecureUnsignedInteger> players_cards(number_of_parties), players_community_cards(number_of_parties);
 
     for (std::size_t i = 0; i < number_of_parties; ++i) {
-        players_cards[i] = party->In<mo::MpcProtocol::kBmr>(my_cards, i);
-        players_randomness[i] = party->In<mo::MpcProtocol::kBmr>(my_randomness, i);
-        players_community_cards[i] = party->In<mo::MpcProtocol::kBmr>(community_cards, i);
+        players_cards[i] = party->In<mo::MpcProtocol::kBooleanGmw>(mo::ToInput(my_cards), i);
+        players_community_cards[i] = party->In<mo::MpcProtocol::kBooleanGmw>(mo::ToInput(community_cards), i);
     }
-
 
     // TODO: Check if all community cards are the same
 
-    mo::SecureUnsignedInteger availability_vector = players_community_cards[0];
-    mo::SecureUnsignedInteger final_randomness = mo::SecureUnsignedInteger();
+    /// XOR combination of all players randomness
+    mo::SecureUnsignedInteger shared_randomness = party->SharedIn<mo::MpcProtocol::kArithmeticGmw>(
+        my_randomness);
+
+
+    mo::SecureUnsignedInteger players_cards_availability = players_community_cards[0];
 
 
     for (std::size_t i = 0; i < number_of_parties; i++) {
         // remove used cards from the availability vector for the next card
-        availability_vector = players_cards[i].Get() & availability_vector.Get();
-        // XOR all players randomness
-        final_randomness = players_randomness[i].Get() ^ final_randomness.Get();
+        players_cards_availability = players_cards[i].Get() ^ players_cards_availability.Get();
+    }
+
+    mo::SecureUnsignedInteger zero_shared(party->SharedIn<mo::MpcProtocol::kBooleanGmw>(mo::ToInput(0)));
+    mo::SecureUnsignedInteger one_shared(party->SharedIn<mo::MpcProtocol::kBooleanGmw>(mo::ToInput(1)));
+
+    auto players_cards_availability_wires = players_cards_availability->Split();
+
+    std::vector<mo::SecureUnsignedInteger> indices;
+    for (std::size_t i = 0; i < 52; i++) {
+        auto bit = mo::ShareWrapper(players_cards_availability_wires[i]);
+        indices[i] = bit.Mux(one_shared.Get(), zero_shared.Get());
     }
 
 
-    auto indices = availability_vector->Split();
-
-
-    std::vector<mo::SecureUnsignedInteger> available_indexes;
-
-
-
-
-    auto next_card = available_indexes[final_randomness.Get() % std::size(available_indexes)].Out();
-
-    // put your code here
     party->Run();
     party->Finish();
 
@@ -96,6 +95,7 @@ std::pair<program_options::variables_map, bool> ParseProgramOptions(int ac, char
             "configuration file, other arguments will overwrite the parameters read from the configuration file"sv;
     bool print, help;
     program_options::options_description description("Allowed options");
+
   // clang-format off
     description.add_options()
       ("help,h", program_options::bool_switch(&help)->default_value(false),"produce help message")
@@ -104,9 +104,9 @@ std::pair<program_options::variables_map, bool> ParseProgramOptions(int ac, char
       ("configuration-file,f", program_options::value<std::string>(), kConfigFileMessage.data())
       ("my-id", program_options::value<std::size_t>(), "my party id")
       ("parties", program_options::value<std::vector<std::string>>()->multitoken(), "info (id,IP,port) for each party e.g., --parties 0,127.0.0.1,23000 1,127.0.0.1,23001")
-      ("my-cards", program_options::value<uint64_t>()->required(), "player's cards")
-      ("my-randomness", program_options::value<uint32_t>(), "my randomness")
-      ("community-cards", program_options::value<uint64_t>()->required(), "community cards");
+      ("my-cards", program_options::value<std::uint64_t>(), "player's cards")
+      ("my-randomness", program_options::value<std::uint64_t>(), "my randomness")
+      ("community-cards", program_options::value<std::uint64_t>(), "community cards");
     // clang-format on
 
     program_options::variables_map user_options;
@@ -150,6 +150,19 @@ std::pair<program_options::variables_map, bool> ParseProgramOptions(int ac, char
     } else
         throw std::runtime_error("Other parties' information is not set but required");
 
+    if (!user_options.contains("my-cards")) {
+        throw std::runtime_error("Player cards is not set but required");
+    }
+
+    if (!user_options.contains("my-randomness")) {
+        throw std::runtime_error("Randomness is not set");
+    }
+
+    if (!user_options.contains("community-cards")) {
+        throw std::runtime_error("Community cards are required to be set");
+    }
+
+
     return std::make_pair(user_options, help);
 }
 
@@ -171,7 +184,7 @@ std::tuple<std::size_t, std::string, std::uint16_t> ParsePartyArgument(
 }
 
 mo::PartyPointer CreateParty(const program_options::variables_map &user_options) {
-    const auto parties_string{user_options["parties"].as<const std::vector<std::string>>()};
+    const auto parties_string{user_options["parties"].as<std::vector<std::string> >()};
     const auto number_of_parties{parties_string.size()};
     const auto my_id{user_options["my-id"].as<std::size_t>()};
     if (my_id >= number_of_parties) {
